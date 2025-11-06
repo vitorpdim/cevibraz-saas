@@ -326,3 +326,53 @@ section:nth-child(5) { animation-delay: 0.4s; }
 ::-webkit-scrollbar-track { background: rgba(72, 187, 120, 0.1); border-radius: 4px; }
 ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #48bb78, #ecc94b); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: linear-gradient(135deg, #38a169, #d69e2e); }
+
+/* --- NOVAS REGRAS SaaS v2.0 --- */
+
+/* 1. Layout Principal de 2 Colunas (Dashboard) */
+.container-principal {
+  display: flex;
+  flex-wrap: wrap; /* Permite quebrar em telas pequenas */
+  padding: 20px;
+  gap: 20px;
+}
+
+/* 2. O Formulário (Coluna da Esquerda) */
+.form-orcamento {
+  flex: 3; /* Ocupa 3/5 do espaço */
+  min-width: 450px; /* Largura mínima */
+  padding: 25px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 3. O Resumo (Coluna da Direita) */
+.container-resumo-pedido {
+  flex: 2; /* Ocupa 2/5 do espaço */
+  min-width: 350px;
+  padding: 25px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  
+  /* Faz o resumo "grudar" no topo ao rolar a página */
+  position: sticky;
+  top: 90px; /* (Altura da navbar + padding) */
+  align-self: flex-start; /* Impede que ele estique */
+}
+
+/* 4. Ajustes nos títulos das seções */
+.titulo-form {
+  font-size: 1.5rem;
+  color: #333;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 20px;
+}
+
+.secao-form {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f9f9f9;
+  margin-bottom: 15px;
+}

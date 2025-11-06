@@ -4,7 +4,8 @@ import {
   InternalServerErrorException,
   OnModuleInit,
 } from '@nestjs/common';
-import PDFDocument from 'pdfkit';
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-require-imports
+const PDFDocument = require('pdfkit');
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 import { Pedido } from '../pedidos/pedido.entity';
@@ -62,11 +63,12 @@ export class PdfService implements OnModuleInit {
         fsPromises.readFile(originalIconePath, 'utf8'),
       ]);
 
-      this.logoBuffer = Buffer.from(logoBase64.trim(), 'base64');
-      this.iconeWhatsappBuffer = Buffer.from(iconeBase64.trim(), 'base64');
+      this.logoBuffer = Buffer.from(logoBase64, 'base64');
+      this.iconeWhatsappBuffer = Buffer.from(iconeBase64, 'base64');
+      this.logger.log('Assets (logo, ícone) carregados.');
     } catch (error) {
       this.logger.error(
-        'Falha ao carregar assets (logo/icone). PDFs serão gerados sem imagens.',
+        'Falha ao carregar assets (logo_base64.txt, icone_whatsapp_base64.txt). Verifique se os arquivos existem em "cevibraz-api/src/assets"',
         (error as Error).message,
       );
     }
@@ -137,6 +139,7 @@ export class PdfService implements OnModuleInit {
     quadrosParaPdf: QuadroParaPdf[],
     valorFinal: number,
   ): Promise<Buffer> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const doc: PDFDoc = new PDFDocument({
       size: 'A4',
       margins: {
@@ -170,6 +173,7 @@ export class PdfService implements OnModuleInit {
     pedidoData: Pedido,
     quadrosParaPdf: QuadroParaPdf[],
   ): Promise<Buffer> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const doc: PDFDoc = new PDFDocument({
       size: 'A4',
       margins: { top: 40, bottom: 40, left: 50, right: 50 },
@@ -570,7 +574,7 @@ export class PdfService implements OnModuleInit {
   ): number {
     doc.font('Helvetica').fontSize(8);
     for (const grupo of grupos) {
-      const desc = this.formatarDescricaoQuadro(grupo.detalhes, false); // false = sem preço
+      const desc = this.formatarDescricaoQuadro(grupo.detalhes, false);
       const descHeight = doc.heightOfString(desc, {
         width: LARGURA_CONTEUDO - 20,
       });
