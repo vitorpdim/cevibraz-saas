@@ -4,8 +4,6 @@ import {
   InternalServerErrorException,
   OnModuleInit,
 } from '@nestjs/common';
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-require-imports
-const PDFDocument = require('pdfkit');
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 import { Pedido } from '../pedidos/pedido.entity';
@@ -18,6 +16,8 @@ const MARGEM_FUNDO = 72;
 const LARGURA_DOC_A4 = 612;
 const ALTURA_DOC_A4 = 792;
 const LARGURA_CONTEUDO = LARGURA_DOC_A4 - MARGEM_ESQUERDA - MARGEM_DIREITA;
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-require-imports
+const PDFDocument = require('pdfkit');
 
 type PDFDoc = PDFKit.PDFDocument;
 
