@@ -8,5 +8,6 @@ import { MoldurasService } from './molduras.service';
   imports: [TypeOrmModule.forFeature([Moldura])],
   controllers: [MoldurasController],
   providers: [MoldurasService],
+  exports: [TypeOrmModule],
 })
 export class MoldurasModule {}
