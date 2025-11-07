@@ -435,8 +435,8 @@ export class PdfService implements OnModuleInit {
       y = MARGEM_TOPO;
     }
 
+    const valorFinalNumerico = valorFinal ?? 0;
     doc.font('Helvetica').fontSize(8).fillColor('#333');
-    // Caixa Esquerda
     doc.rect(MARGEM_ESQUERDA, y, colEsquerdaWidth, alturaCaixa).stroke();
 
     doc.font('Helvetica-Bold');
@@ -450,10 +450,9 @@ export class PdfService implements OnModuleInit {
       width: colEsquerdaWidth - 20,
     });
 
-    // Caixa Direita
     doc.rect(xDireita, y, colDireitaWidth, alturaCaixa).stroke();
     doc.text('Total da Mercadoria:', xDireita + 5, y + 5);
-    doc.text(`R$ ${valorFinal.toFixed(2)}`, xDireita + 5, y + 5, {
+    doc.text(`R$ ${valorFinalNumerico.toFixed(2)}`, xDireita + 5, y + 5, {
       align: 'right',
       width: colDireitaWidth - 10,
     });
@@ -464,12 +463,11 @@ export class PdfService implements OnModuleInit {
     });
     doc.font('Helvetica-Bold').fontSize(11);
     doc.text('TOTAL GERAL:', xDireita + 5, y + 50);
-    doc.text(`R$ ${valorFinal.toFixed(2)}`, xDireita + 5, y + 65, {
+    doc.text(`R$ ${valorFinalNumerico.toFixed(2)}`, xDireita + 5, y + 65, {
       align: 'right',
       width: colDireitaWidth - 10,
     });
 
-    // Rodapé da Empresa (Layout 453)
     const yFooter = ALTURA_DOC_A4 - MARGEM_FUNDO + 10;
     doc.font('Helvetica').fontSize(8.6).fillColor('#333');
     doc.text(

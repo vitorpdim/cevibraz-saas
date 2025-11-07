@@ -22,9 +22,6 @@ import {
   QuadroParaPdf,
 } from './pedido.dto';
 import { PdfService } from '../pdf/pdf.service';
-// CORREÇÃO: Não precisamos mais de 'fs' ou 'path' aqui
-// import * as fs from 'fs/promises';
-// import * as path from 'path';
 
 @Controller('api/pedidos')
 export class PedidosController {
