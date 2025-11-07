@@ -4,6 +4,7 @@ import {
   fetchMateriais,
   calcularPrecoQuadro,
   salvarPedido,
+  fetchPdfBase64,
 } from "../services/api";
 import type {
   Moldura,
@@ -247,7 +248,25 @@ export function OrcamentoPage() {
 
     try {
       const resposta: SalvarPedidoResponse = await salvarPedido(dto);
+
       alert(`Pedido ${resposta.numeroPedido} salvo com sucesso!`);
+
+      if (resposta.pdf_pedido_url) {
+        const filename = `pedido_${resposta.numeroPedido}.pdf`;
+        try {
+          const base64Data = await fetchPdfBase64(resposta.pedidoId, "pdf");
+          const link = document.createElement("a");
+          link.href = `data:application/pdf;base64,${base64Data}`;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (downloadError) {
+          console.error("Erro ao baixar o PDF:", downloadError);
+          alert("Erro ao baixar o PDF. Verifique o console.");
+        }
+      }
+
       handleLimparPedido();
     } catch (err: unknown) {
       console.error("Erro ao salvar pedido:", err);

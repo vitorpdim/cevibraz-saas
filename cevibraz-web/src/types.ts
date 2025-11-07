@@ -54,6 +54,8 @@ export interface SalvarPedidoResponse {
   pedidoId: number;
   numeroPedido: string;
   valorTotal: number;
+  pdf_pedido_url?: string;
+  pdf_os_url?: string;
 }
 
 export interface PedidoBacklog {

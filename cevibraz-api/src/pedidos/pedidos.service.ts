@@ -329,10 +329,20 @@ export class PedidosService {
       for (const nomeMaterial of quadroDto.materiaisSelecionados) {
         const material = materiaisMap.get(nomeMaterial.toLowerCase());
         if (material) {
-          const esp =
-            nomeMaterial.toLowerCase() === 'paspatur'
-              ? quadroDto.espessuraPaspatur
-              : undefined;
+          let esp: number | undefined = undefined;
+          if (nomeMaterial.toLowerCase() === 'paspatur') {
+            const raw = quadroDto.espessuraPaspatur;
+            if (
+              raw !== null &&
+              raw !== undefined &&
+              (typeof raw !== 'string' || raw !== '')
+            ) {
+              const parsed = Number(raw);
+              if (!Number.isNaN(parsed)) {
+                esp = parsed;
+              }
+            }
+          }
 
           materiaisSalvos.push({
             nome: material.nome,

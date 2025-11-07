@@ -202,23 +202,32 @@ export class PdfService implements OnModuleInit {
   // =================================================================
 
   private desenharHeaderPedido(doc: PDFDoc, pedido: Pedido) {
-    const yInicio = MARGEM_TOPO - 30;
-    if (this.logoBuffer) {
-      doc.image(this.logoBuffer, MARGEM_ESQUERDA, yInicio, { width: 200 });
-    }
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(14)
-      .fillColor('black')
-      .text('PEDIDO DE VENDAS', MARGEM_ESQUERDA, yInicio + 60);
+    // Reservamos um bloco de header mais consistente para evitar sobreposição com títulos/elementos centrais.
+    // Diminuímos levemente a altura do logo e alinhamos a caixa de informações ao topo deste bloco.
+    const logoWidth = 200;
+    const logoHeight = 60; // reduzido de 80 para prevenir overlap visual
+    const headerTop = MARGEM_TOPO - 10; // recuamos um pouco para dar espaço ao topo
 
+    // Esquerda (Logo)
+    if (this.logoBuffer) {
+      doc.image(this.logoBuffer, MARGEM_ESQUERDA, headerTop, {
+        width: logoWidth,
+        height: logoHeight,
+      });
+    }
+
+    // Caixa de informações (lado direito) alinhada ao topo do header e fora da área do logo
     const xDireita = LARGURA_DOC_A4 - MARGEM_DIREITA - 180;
-    const yDireita = yInicio + 10;
-    doc.rect(xDireita, yDireita, 180, 50).stroke();
+    // Garantimos que a caixa esteja no topo do header (não mais "à meia altura" que sobrepunha o logo)
+    const yDireita = headerTop + 6;
+    const alturaCaixa = 50;
+
+    doc.rect(xDireita, yDireita, 180, alturaCaixa).stroke();
     doc.font('Helvetica').fontSize(8);
     doc.text('Emissão:', xDireita + 5, yDireita + 5);
     doc.text('Atendimento:', xDireita + 5, yDireita + 20);
     doc.text('Pedido:', xDireita + 5, yDireita + 35);
+
     doc.font('Helvetica-Bold');
     doc.text(
       new Date(pedido.data_criacao).toLocaleDateString('pt-BR'),
@@ -302,10 +311,11 @@ export class PdfService implements OnModuleInit {
       return acc + width;
     }, MARGEM_ESQUERDA);
 
+    // Headers da Tabela
     doc.font('Helvetica-Bold').fontSize(8);
     doc
       .rect(colPositions[0], tableTop, LARGURA_CONTEUDO, 20)
-      .fillAndStroke('#f2f2f2', '#000');
+      .fillAndStroke('#f2f2f2', '#000'); // Stroke #000 (Preto)
     doc.fillColor('#000');
     doc.text('Item', colPositions[0] + 5, tableTop + 7, {
       width: colWidths[0] - 10,
@@ -378,7 +388,11 @@ export class PdfService implements OnModuleInit {
         doc.font('Helvetica').fontSize(8);
       }
 
-      const yCell = yAtual + 7;
+      const verticalPadding = Math.max(
+        6,
+        Math.round((currentLineHeight - 12) / 2),
+      );
+      const yCell = yAtual + verticalPadding;
       doc.text((index + 1).toString(), colPositions[0] + 5, yCell, {
         width: colWidths[0] - 10,
         align: 'center',
@@ -404,6 +418,8 @@ export class PdfService implements OnModuleInit {
         align: 'right',
       });
 
+      doc.strokeColor('#ccc');
+
       for (let i = 0; i <= colWidths.length; i++) {
         doc
           .moveTo(colPositions[i], yAtual)
@@ -414,15 +430,18 @@ export class PdfService implements OnModuleInit {
         .moveTo(MARGEM_ESQUERDA, yAtual + currentLineHeight)
         .lineTo(LARGURA_DOC_A4 - MARGEM_DIREITA, yAtual + currentLineHeight)
         .stroke();
+
       yAtual += currentLineHeight;
     });
+
+    doc.strokeColor('#000');
     return yAtual;
   }
 
   private desenharFooterPedido(
     doc: PDFDoc,
     pedido: Pedido,
-    valorFinal: number | string, // Recebe string do TypeORM ou number
+    valorFinal: number | string,
     y: number,
   ) {
     const colEsquerdaWidth = LARGURA_CONTEUDO * 0.6;
@@ -430,59 +449,100 @@ export class PdfService implements OnModuleInit {
     const xDireita = MARGEM_ESQUERDA + colEsquerdaWidth;
     const alturaCaixa = 120;
 
-    if (y + alturaCaixa > ALTURA_DOC_A4 - MARGEM_FUNDO) {
+    const yFooterStart = y + 20;
+
+    if (yFooterStart + alturaCaixa > ALTURA_DOC_A4 - MARGEM_FUNDO) {
       doc.addPage();
       y = MARGEM_TOPO;
+    } else {
+      y = yFooterStart;
     }
 
     const valorFinalNumerico = parseFloat(String(valorFinal)) || 0;
+
     doc.font('Helvetica').fontSize(8).fillColor('#333');
+
+    // --- Bloco Esquerda (Obs) ---
     doc.rect(MARGEM_ESQUERDA, y, colEsquerdaWidth, alturaCaixa).stroke();
+
+    let yAtualEsquerda = y + 5;
+
     doc.font('Helvetica-Bold');
-    doc.text('CONDIÇÃO DE PAGAMENTO:', MARGEM_ESQUERDA + 5, y + 5);
-    doc.text('Vendedor:', MARGEM_ESQUERDA + 5, y + 35);
-    doc.text('Observações:', MARGEM_ESQUERDA + 5, y + 65);
+    doc.text('CONDIÇÃO DE PAGAMENTO:', MARGEM_ESQUERDA + 5, yAtualEsquerda);
+
+    yAtualEsquerda += 30;
+    doc.text('Vendedor:', MARGEM_ESQUERDA + 5, yAtualEsquerda);
+
+    yAtualEsquerda += 10;
     doc.font('Helvetica');
-    doc.text(pedido.atendente, MARGEM_ESQUERDA + 15, y + 45);
-    doc.text(pedido.observacoes || '', MARGEM_ESQUERDA + 15, y + 75, {
+    doc.text(pedido.atendente, MARGEM_ESQUERDA + 15, yAtualEsquerda);
+
+    yAtualEsquerda += 20;
+    doc.font('Helvetica-Bold');
+    doc.text('Observações:', MARGEM_ESQUERDA + 5, yAtualEsquerda);
+
+    yAtualEsquerda += 10;
+    doc.font('Helvetica');
+    doc.text(pedido.observacoes || '', MARGEM_ESQUERDA + 15, yAtualEsquerda, {
       width: colEsquerdaWidth - 20,
     });
 
+    // --- Bloco Direita (Totais) ---
     doc.rect(xDireita, y, colDireitaWidth, alturaCaixa).stroke();
-    doc.text('Total da Mercadoria:', xDireita + 5, y + 5);
-    doc.text(`R$ ${valorFinalNumerico.toFixed(2)}`, xDireita + 5, y + 5, {
-      align: 'right',
-      width: colDireitaWidth - 10,
-    });
-    doc.text('Frete:', xDireita + 5, y + 20);
-    doc.text('R$ 0,00', xDireita + 5, y + 20, {
-      align: 'right',
-      width: colDireitaWidth - 10,
-    });
-    doc.font('Helvetica-Bold').fontSize(11);
-    doc.text('TOTAL GERAL:', xDireita + 5, y + 50);
-    doc.text(`R$ ${valorFinalNumerico.toFixed(2)}`, xDireita + 5, y + 65, {
-      align: 'right',
-      width: colDireitaWidth - 10,
-    });
 
-    const yFooter = ALTURA_DOC_A4 - MARGEM_FUNDO + 10;
+    let yAtualDireita = y + 10;
+    const xTextoDireita = xDireita + 5;
+    const optionsDireita = {
+      align: 'right' as const,
+      width: colDireitaWidth - 10,
+    };
+    // --- FIM DA CORREÇÃO ---
+
+    doc.font('Helvetica').fontSize(8);
+    doc.text('Total da Mercadoria:', xTextoDireita, yAtualDireita);
+    doc.text(
+      `R$ ${valorFinalNumerico.toFixed(2)}`,
+      xTextoDireita,
+      yAtualDireita,
+      optionsDireita,
+    );
+
+    yAtualDireita += 15;
+    doc.text('Frete:', xTextoDireita, yAtualDireita);
+    doc.text('R$ 0,00', xTextoDireita, yAtualDireita, optionsDireita);
+
+    yAtualDireita += 30;
+    doc.font('Helvetica-Bold').fontSize(11);
+    doc.text('TOTAL GERAL:', xTextoDireita, yAtualDireita);
+
+    yAtualDireita += 15;
+    doc.text(
+      `R$ ${valorFinalNumerico.toFixed(2)}`,
+      xTextoDireita,
+      yAtualDireita,
+      optionsDireita,
+    );
+    const yFooterEmpresa = ALTURA_DOC_A4 - MARGEM_FUNDO - 10;
     doc.font('Helvetica').fontSize(8.6).fillColor('#333');
     doc.text(
       'Av. Prisciliana de Castilho n° 422 - Bairro: Centro - Caraguatatuba/SP - CEP: 11660-330',
       MARGEM_ESQUERDA,
-      yFooter,
+      yFooterEmpresa,
       { align: 'center', width: LARGURA_CONTEUDO },
     );
     if (this.iconeWhatsappBuffer) {
       const textWidth = doc.widthOfString('Telefone: (12) 99143-5644');
       const xIcon = LARGURA_DOC_A4 / 2 - textWidth / 2 + 55;
-      doc.image(this.iconeWhatsappBuffer, xIcon, yFooter + 12, { width: 10 });
+      doc.image(this.iconeWhatsappBuffer, xIcon, yFooterEmpresa + 12, {
+        width: 10,
+      });
     }
-    doc.text('Telefone: (12) 99143-5644', MARGEM_ESQUERDA, yFooter + 13, {
-      align: 'center',
-      width: LARGURA_CONTEUDO,
-    });
+    doc.text(
+      'Telefone: (12) 99143-5644',
+      MARGEM_ESQUERDA,
+      yFooterEmpresa + 13,
+      { align: 'center', width: LARGURA_CONTEUDO },
+    );
   }
 
   // =================================================================
@@ -653,8 +713,14 @@ export class PdfService implements OnModuleInit {
     const listaItens: string[] = [];
     if (detalhes.materiais) {
       detalhes.materiais.forEach((mat) => {
-        const espessura = mat.espessura_paspatur_cm ?? 0;
-        if (mat.nome.toLowerCase() === 'paspatur' && espessura > 0) {
+        // Normaliza espessura para número (pode vir como string/undefined). Protege contra NaN.
+        const espessuraRaw = mat.espessura_paspatur_cm;
+        const espessura = Number(espessuraRaw ?? 0);
+        if (
+          mat.nome.toLowerCase() === 'paspatur' &&
+          isFinite(espessura) &&
+          espessura > 0
+        ) {
           listaItens.push(`${mat.nome} (${espessura.toFixed(1)}cm)`);
         } else {
           listaItens.push(mat.nome);
