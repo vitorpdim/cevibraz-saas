@@ -83,30 +83,32 @@ export function OrcamentoPage() {
       isPaspaturVisivel,
     } = formQuadro;
 
+    let resumo = "Preencha os campos para ver o resumo."; // Padrão
+
     if (
-      !altura &&
-      !largura &&
-      moldurasDoQuadro.length === 0 &&
-      materiaisDoQuadro.length === 0
+      altura ||
+      largura ||
+      moldurasDoQuadro.length > 0 ||
+      materiaisDoQuadro.length > 0
     ) {
-      setFormQuadro((f) => ({
-        ...f,
-        resumoDoQuadro: "Preencha os campos para ver o resumo.",
-      }));
-      return;
+      resumo = `Medidas: ${altura || 0}cm x ${largura || 0}cm.\n`;
+      if (moldurasDoQuadro.length > 0) {
+        resumo += `Molduras: ${moldurasDoQuadro.join(", ")}.\n`;
+      }
+      if (materiaisDoQuadro.length > 0) {
+        resumo += `Materiais: ${materiaisDoQuadro.join(", ")}.\n`;
+      }
+      if (isPaspaturVisivel && espessuraPaspatur) {
+        resumo += `Esp. Paspatur: ${espessuraPaspatur}cm.`;
+      }
     }
 
-    let resumo = `Medidas: ${altura || 0}cm x ${largura || 0}cm.\n`;
-    if (moldurasDoQuadro.length > 0) {
-      resumo += `Molduras: ${moldurasDoQuadro.join(", ")}.\n`;
-    }
-    if (materiaisDoQuadro.length > 0) {
-      resumo += `Materiais: ${materiaisDoQuadro.join(", ")}.\n`;
-    }
-    if (isPaspaturVisivel && espessuraPaspatur) {
-      resumo += `Esp. Paspatur: ${espessuraPaspatur}cm.`;
-    }
-    setFormQuadro((f) => ({ ...f, resumoDoQuadro: resumo }));
+    setFormQuadro((prevState) => {
+      if (prevState.resumoDoQuadro === resumo) {
+        return prevState;
+      }
+      return { ...prevState, resumoDoQuadro: resumo };
+    });
   }, [
     formQuadro.altura,
     formQuadro.largura,
@@ -114,7 +116,6 @@ export function OrcamentoPage() {
     formQuadro.materiaisDoQuadro,
     formQuadro.espessuraPaspatur,
     formQuadro.isPaspaturVisivel,
-    formQuadro,
   ]);
 
   const handleAddMoldura = () => {

@@ -9,6 +9,9 @@ import * as path from 'path';
 import { Pedido } from '../pedidos/pedido.entity';
 import { GrupoQuadro, QuadroParaPdf } from '../pedidos/pedido.dto';
 
+import PDFDocument from 'pdfkit';
+
+// --- Constantes de Layout ---
 const MARGEM_ESQUERDA = 72;
 const MARGEM_DIREITA = 72;
 const MARGEM_TOPO = 72;
@@ -16,8 +19,6 @@ const MARGEM_FUNDO = 72;
 const LARGURA_DOC_A4 = 612;
 const ALTURA_DOC_A4 = 792;
 const LARGURA_CONTEUDO = LARGURA_DOC_A4 - MARGEM_ESQUERDA - MARGEM_DIREITA;
-// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-require-imports
-const PDFDocument = require('pdfkit');
 
 type PDFDoc = PDFKit.PDFDocument;
 
@@ -32,7 +33,7 @@ export class PdfService implements OnModuleInit {
   private readonly assetsDir: string;
 
   constructor() {
-    this.storageDir = path.join(__dirname, '..', '..', 'storage');
+    this.storageDir = path.join(__dirname, '..', '..', '..', 'storage');
     this.pdfDir = path.join(this.storageDir, 'pdfs');
     this.assetsDir = path.join(__dirname, '..', 'assets');
   }
@@ -63,12 +64,11 @@ export class PdfService implements OnModuleInit {
         fsPromises.readFile(originalIconePath, 'utf8'),
       ]);
 
-      this.logoBuffer = Buffer.from(logoBase64, 'base64');
-      this.iconeWhatsappBuffer = Buffer.from(iconeBase64, 'base64');
-      this.logger.log('Assets (logo, ícone) carregados.');
+      this.logoBuffer = Buffer.from(logoBase64.trim(), 'base64');
+      this.iconeWhatsappBuffer = Buffer.from(iconeBase64.trim(), 'base64');
     } catch (error) {
       this.logger.error(
-        'Falha ao carregar assets (logo_base64.txt, icone_whatsapp_base64.txt). Verifique se os arquivos existem em "cevibraz-api/src/assets"',
+        `Falha ao carregar assets (logo/icone) de: ${this.assetsDir}`,
         (error as Error).message,
       );
     }
@@ -88,13 +88,11 @@ export class PdfService implements OnModuleInit {
     const filePath = path.join(this.pdfDir, filename);
 
     try {
-      // Gera o PDF em memória (Buffer)
       const buffer = await this.gerarPdfPedidoBuffer(
         pedidoData,
         quadrosParaPdf,
         valorFinal,
       );
-      // Salva o buffer no disco
       await fsPromises.writeFile(filePath, buffer);
       const publicUrl = `/static/pdfs/${filename}`;
       return publicUrl;
@@ -116,9 +114,7 @@ export class PdfService implements OnModuleInit {
 
     try {
       const buffer = await this.gerarPdfOsBuffer(pedidoData, quadrosParaPdf);
-      // Salva o buffer no disco
       await fsPromises.writeFile(filePath, buffer);
-      // Retorna a URL pública
       const publicUrl = `/static/pdfs/${filename}`;
       return publicUrl;
     } catch (error) {
@@ -139,7 +135,6 @@ export class PdfService implements OnModuleInit {
     quadrosParaPdf: QuadroParaPdf[],
     valorFinal: number,
   ): Promise<Buffer> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const doc: PDFDoc = new PDFDocument({
       size: 'A4',
       margins: {
@@ -155,7 +150,7 @@ export class PdfService implements OnModuleInit {
 
     // --- Desenha o Layout Específico do Pedido ---
     const grupos = this.agruparQuadrosParaPDF(quadrosParaPdf);
-    this.desenharHeaderPedido(doc, pedidoData); // Layout Source 453
+    this.desenharHeaderPedido(doc, pedidoData);
     let y = this.desenharInfoClientePedido(doc, pedidoData, 160);
     y = this.desenharTabelaQuadrosPedido(doc, grupos, y + 10);
     this.desenharFooterPedido(doc, pedidoData, valorFinal, y + 20);
@@ -173,7 +168,6 @@ export class PdfService implements OnModuleInit {
     pedidoData: Pedido,
     quadrosParaPdf: QuadroParaPdf[],
   ): Promise<Buffer> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const doc: PDFDoc = new PDFDocument({
       size: 'A4',
       margins: { top: 40, bottom: 40, left: 50, right: 50 },
@@ -182,9 +176,8 @@ export class PdfService implements OnModuleInit {
     const buffers: Buffer[] = [];
     doc.on('data', buffers.push.bind(buffers));
 
-    // --- Desenha o Layout Específico da OS ---
     const grupos = this.agruparQuadrosParaPDF(quadrosParaPdf);
-    this.desenharHeaderOS(doc); // Layout Source 458
+    this.desenharHeaderOS(doc);
     let y = this.desenharInfoClienteOS(doc, pedidoData, 170);
     if (pedidoData.observacoes) {
       y = this.desenharObservacoesOS(doc, pedidoData.observacoes, y + 5);
@@ -195,7 +188,6 @@ export class PdfService implements OnModuleInit {
       .fillColor('black')
       .text('Itens do Pedido', MARGEM_ESQUERDA, y + 10);
     y = this.desenharListaQuadrosOS(doc, grupos, y + 25);
-    // --- Fim do Desenho ---
 
     doc.end();
 
@@ -310,7 +302,6 @@ export class PdfService implements OnModuleInit {
       return acc + width;
     }, MARGEM_ESQUERDA);
 
-    // Headers da Tabela
     doc.font('Helvetica-Bold').fontSize(8);
     doc
       .rect(colPositions[0], tableTop, LARGURA_CONTEUDO, 20)
@@ -345,7 +336,7 @@ export class PdfService implements OnModuleInit {
     doc.font('Helvetica').fontSize(8);
 
     grupos.forEach((grupo, index) => {
-      const desc = this.formatarDescricaoQuadro(grupo.detalhes, true); // true = mostrar preço
+      const desc = this.formatarDescricaoQuadro(grupo.detalhes, true);
       const valorUnit = grupo.detalhes.valorCalculado;
       const valorTotalGrupo = valorUnit * grupo.quantidade;
       const descHeight = doc.heightOfString(desc, { width: colWidths[2] - 10 });
@@ -354,7 +345,6 @@ export class PdfService implements OnModuleInit {
       if (yAtual + currentLineHeight > ALTURA_DOC_A4 - MARGEM_FUNDO - 120) {
         doc.addPage();
         yAtual = MARGEM_TOPO;
-        // Redesenhar header da tabela
         doc.font('Helvetica-Bold').fontSize(8);
         doc
           .rect(colPositions[0], yAtual, LARGURA_CONTEUDO, 20)

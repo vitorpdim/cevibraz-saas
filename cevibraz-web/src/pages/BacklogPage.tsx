@@ -9,10 +9,7 @@ export const BacklogPage: React.FC = () => {
         <p>
           Carregando tabela de pedidos...
         </p>
-        {/*
-          refatoração do backlog/index.html
-          e do backlog.js
-        */}
+        {/* refatoração do backlog/index.html e do backlog.js */}
       </div>
     </div>
   );
