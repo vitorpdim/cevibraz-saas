@@ -67,7 +67,7 @@ export class PedidosService {
       );
 
       const [lastPedido] = await manager.query<MaxPedidoResult[]>(
-        'SELECT MAX(CAST(numero_pedido AS UNSIGNED)) as max_num FROM pedidos',
+        'SELECT MAX(CAST(numero_pedido AS INTEGER)) as max_num FROM pedidos',
       );
       const proximoNumero = (lastPedido?.max_num || 0) + 1;
       const numeroPedidoFormatado = String(proximoNumero).padStart(4, '0');
