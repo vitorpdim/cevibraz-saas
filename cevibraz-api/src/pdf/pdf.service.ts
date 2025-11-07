@@ -422,7 +422,7 @@ export class PdfService implements OnModuleInit {
   private desenharFooterPedido(
     doc: PDFDoc,
     pedido: Pedido,
-    valorFinal: number,
+    valorFinal: number | string, // Recebe string do TypeORM ou number
     y: number,
   ) {
     const colEsquerdaWidth = LARGURA_CONTEUDO * 0.6;
@@ -435,15 +435,13 @@ export class PdfService implements OnModuleInit {
       y = MARGEM_TOPO;
     }
 
-    const valorFinalNumerico = valorFinal ?? 0;
+    const valorFinalNumerico = parseFloat(String(valorFinal)) || 0;
     doc.font('Helvetica').fontSize(8).fillColor('#333');
     doc.rect(MARGEM_ESQUERDA, y, colEsquerdaWidth, alturaCaixa).stroke();
-
     doc.font('Helvetica-Bold');
     doc.text('CONDIÇÃO DE PAGAMENTO:', MARGEM_ESQUERDA + 5, y + 5);
     doc.text('Vendedor:', MARGEM_ESQUERDA + 5, y + 35);
     doc.text('Observações:', MARGEM_ESQUERDA + 5, y + 65);
-
     doc.font('Helvetica');
     doc.text(pedido.atendente, MARGEM_ESQUERDA + 15, y + 45);
     doc.text(pedido.observacoes || '', MARGEM_ESQUERDA + 15, y + 75, {
