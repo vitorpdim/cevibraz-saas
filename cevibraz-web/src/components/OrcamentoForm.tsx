@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import type { Moldura, Material } from "../types";
 
 interface OrcamentoFormProps {
@@ -60,6 +60,32 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
     onLimparCampos,
     onAdicionarQuadro,
   } = props;
+
+  // Estado local para o texto digitado no autocomplete
+  const [molduraInput, setMolduraInput] = useState("");
+
+  // Atualiza o input e o valor selecionado
+  const handleMolduraInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMolduraInput(e.target.value);
+    onMolduraSelecionadaChange(e.target.value);
+  };
+
+  // Filtra as molduras conforme o texto digitado
+  const moldurasFiltradas = useMemo(() => {
+    const texto = molduraInput.trim().toLowerCase();
+    if (!texto) return moldurasList;
+    return moldurasList.filter(
+      (m) =>
+        m.nome.toLowerCase().includes(texto) ||
+        m.codigo.toLowerCase().includes(texto)
+    );
+  }, [molduraInput, moldurasList]);
+
+  // Quando seleciona uma moldura da lista
+  const handleSelectMoldura = (nome: string) => {
+    setMolduraInput(nome);
+    onMolduraSelecionadaChange(nome);
+  };
 
   return (
     <div className="form-section-wrapper">
@@ -145,29 +171,67 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
 
         <div className="form-group">
           <label htmlFor="molduraSelect">Moldura</label>
-          <div className="input-group">
-            <select
+          <div className="input-group" style={{ position: "relative" }}>
+            <input
+              type="text"
               className="form-control"
               id="molduraSelect"
-              value={molduraSelecionada}
-              onChange={(e) => onMolduraSelecionadaChange(e.target.value)}
+              placeholder="Digite para buscar moldura..."
+              value={molduraInput}
+              onChange={handleMolduraInputChange}
+              autoComplete="off"
+            />
+            <button
+              className="btn btn-primary"
+              onClick={onAddMoldura}
+              type="button"
             >
-              <option value="">Selecione uma moldura...</option>
-              {moldurasList.map((moldura) => (
-                <option key={moldura.id} value={moldura.nome}>
-                  {moldura.nome} (Cod: {moldura.codigo})
-                </option>
-              ))}
-            </select>
-            <button className="btn btn-primary" onClick={onAddMoldura}>
               Adicionar
             </button>
             <button
               className="btn btn-secondary"
               onClick={onRemoveUltimaMoldura}
+              type="button"
             >
               Remover
             </button>
+            {/* Lista de sugestões */}
+            {molduraInput && moldurasFiltradas.length > 0 && (
+              <ul
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  zIndex: 10,
+                  background: "#fff",
+                  border: "1px solid #eee",
+                  borderRadius: "0 0 8px 8px",
+                  maxHeight: 180,
+                  overflowY: "auto",
+                  margin: 0,
+                  padding: 0,
+                  listStyle: "none",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                }}
+              >
+                {moldurasFiltradas.map((moldura) => (
+                  <li
+                    key={moldura.id}
+                    style={{
+                      padding: "8px 16px",
+                      cursor: "pointer",
+                      borderBottom: "1px solid #f0f0f0",
+                      background:
+                        moldura.nome === molduraSelecionada ? "#f0f8e8" : "#fff",
+                    }}
+                    onClick={() => handleSelectMoldura(moldura.nome)}
+                  >
+                    {moldura.nome} (Cod: {moldura.codigo})
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 

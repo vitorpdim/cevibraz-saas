@@ -7,6 +7,7 @@ import {
   deletePedido,
   fetchPdfBase64,
 } from "../services/api";
+import { Link } from "react-router-dom";
 
 type AbaStatus = "a-fazer" | "ja-feito" | "entregue";
 
@@ -175,6 +176,13 @@ export const BacklogPage: React.FC = () => {
               Avançar
             </button>
           )}
+          <Link
+            to={`/orcamento/${pedido.id}`}
+            className="btn btn-success"
+            style={{ marginRight: 8 }}
+          >
+            Editar
+          </Link>
           <button
             className="btn-delete"
             onClick={() => handleDelete(pedido.id, pedido.numero_pedido)}

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+import { IsNumber, IsOptional } from 'class-validator';
 export class QuadroDto {
   altura: number;
   largura: number;
@@ -17,6 +19,10 @@ export class CreatePedidoDto {
   observacoes: string;
   quadros: QuadroDto[];
   valor_final_calculado: number;
+
+  @IsOptional()
+  @IsNumber()
+  valor_final_manual?: number;
 }
 
 // DTO p atualizar um pedido
@@ -24,6 +30,10 @@ export class UpdatePedidoDto {
   observacoes: string;
   quadros: QuadroDto[];
   valor_final_calculado: number;
+
+  @IsOptional()
+  @IsNumber()
+  valor_final_manual?: number;
 }
 
 // DTO p atualizar so o status

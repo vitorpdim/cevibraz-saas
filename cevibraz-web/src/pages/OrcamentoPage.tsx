@@ -5,18 +5,19 @@ import {
   calcularPrecoQuadro,
   salvarPedido,
   fetchPdfBase64,
+  fetchPedidoById,
+  updatePedido,
 } from "../services/api";
 import type {
   Moldura,
   Material,
-  QuadroParaSalvar,
+  QuadroNoEstado,
   CalcularQuadroDto,
-  CreatePedidoDto,
-  SalvarPedidoResponse,
 } from "../types";
 
 import { OrcamentoForm } from "../components/OrcamentoForm";
 import { ResumoPedido } from "../components/ResumoPedido";
+import { useParams, useNavigate } from "react-router-dom";
 
 const estadoInicialFormQuadro = {
   altura: "",
@@ -39,11 +40,14 @@ export function OrcamentoPage() {
   const [cliente, setCliente] = useState("");
   const [telefone, setTelefone] = useState("");
   const [observacoes, setObservacoes] = useState("");
-  const [quadrosDoPedido, setQuadrosDoPedido] = useState<QuadroParaSalvar[]>(
-    []
+  const [quadrosDoPedido, setQuadrosDoPedido] = useState<QuadroNoEstado[]>(
+    [] // Corrigido aqui
   );
   const [valorTotalPedido, setValorTotalPedido] = useState(0);
   const [formQuadro, setFormQuadro] = useState(estadoInicialFormQuadro);
+  const { pedidoId } = useParams<{ pedidoId?: string }>();
+  const navigate = useNavigate();
+  const [editando, setEditando] = useState(false);
 
   useEffect(() => {
     const carregarDadosIniciais = async () => {
@@ -110,14 +114,7 @@ export function OrcamentoPage() {
       }
       return { ...prevState, resumoDoQuadro: resumo };
     });
-  }, [
-    formQuadro.altura,
-    formQuadro.largura,
-    formQuadro.moldurasDoQuadro,
-    formQuadro.materiaisDoQuadro,
-    formQuadro.espessuraPaspatur,
-    formQuadro.isPaspaturVisivel,
-  ]);
+  }, [formQuadro.altura, formQuadro.largura, formQuadro.moldurasDoQuadro, formQuadro.materiaisDoQuadro, formQuadro.espessuraPaspatur, formQuadro.isPaspaturVisivel, formQuadro]);
 
   const handleAddMoldura = () => {
     if (
@@ -189,7 +186,8 @@ export function OrcamentoPage() {
 
       const resultadoCalculo = await calcularPrecoQuadro(dto);
 
-      const novoQuadro: QuadroParaSalvar = {
+      const novoQuadro: QuadroNoEstado = {
+        id: Math.floor(Math.random() * 1e9), // Gera um id temporário
         ...dto,
         valorCalculado: resultadoCalculo.total,
       };
@@ -202,10 +200,10 @@ export function OrcamentoPage() {
           2
         )}`,
       }));
-    } catch (err: unknown) {
-      console.error("Erro ao calcular/adicionar quadro:", err);
-      if (err instanceof Error) {
-        alert(`Erro ao calcular o preço: ${err.message}`);
+    } catch (error) {
+      console.error("Erro ao calcular/adicionar quadro:", error);
+      if (error instanceof Error) {
+        alert(`Erro ao calcular o preço: ${error.message}`);
       } else {
         alert("Erro ao calcular o preço. Verifique o console.");
       }
@@ -227,6 +225,30 @@ export function OrcamentoPage() {
     );
   };
 
+  useEffect(() => {
+    if (pedidoId) {
+      setEditando(true);
+      (async () => {
+        try {
+          setIsLoading(true);
+          const pedido = await fetchPedidoById(Number(pedidoId));
+          setAtendente(pedido.atendente);
+          setCliente(pedido.clienteNome);
+          setTelefone(pedido.clienteTelefone);
+          setObservacoes(pedido.observacoes);
+          setQuadrosDoPedido(pedido.quadros);
+          setValorTotalPedido(pedido.valor_final_salvo);
+        } catch {
+          setError("Erro ao carregar pedido para edição.");
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+    } else {
+      setEditando(false);
+    }
+  }, [pedidoId]);
+
   const handleSalvarPedido = useCallback(async () => {
     if (!atendente || !cliente) {
       alert("Atendente e Cliente são obrigatórios.");
@@ -237,7 +259,7 @@ export function OrcamentoPage() {
       return;
     }
 
-    const dto: CreatePedidoDto = {
+    const dto = {
       nomeAtendente: atendente,
       nomeCliente: cliente,
       telefoneCliente: telefone,
@@ -247,9 +269,14 @@ export function OrcamentoPage() {
     };
 
     try {
-      const resposta: SalvarPedidoResponse = await salvarPedido(dto);
-
-      alert(`Pedido ${resposta.numeroPedido} salvo com sucesso!`);
+      let resposta;
+      if (editando && pedidoId) {
+        resposta = await updatePedido(Number(pedidoId), dto);
+        alert(`Pedido ${resposta.numeroPedido} atualizado com sucesso!`);
+      } else {
+        resposta = await salvarPedido(dto);
+        alert(`Pedido ${resposta.numeroPedido} salvo com sucesso!`);
+      }
 
       if (resposta.pdf_pedido_url) {
         const filename = `pedido_${resposta.numeroPedido}.pdf`;
@@ -268,6 +295,7 @@ export function OrcamentoPage() {
       }
 
       handleLimparPedido();
+      navigate("/backlog");
     } catch (err: unknown) {
       console.error("Erro ao salvar pedido:", err);
       if (err instanceof Error) {
@@ -283,6 +311,9 @@ export function OrcamentoPage() {
     observacoes,
     quadrosDoPedido,
     valorTotalPedido,
+    editando,
+    pedidoId,
+    navigate,
   ]);
 
   // --- RENDERIZAÇÃO ---

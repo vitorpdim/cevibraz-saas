@@ -13,7 +13,6 @@ export interface Material {
   valor_base: number;
 }
 
-// oq enviar pro calculo.dto.ts
 export interface CalcularQuadroDto {
   altura: number;
   largura: number;
@@ -29,7 +28,9 @@ export interface CalculoResponse {
   detalhes: string[];
 }
 
-export interface QuadroParaSalvar {
+// Para uso no estado do frontend e edição
+export interface QuadroNoEstado {
+  id: number;
   altura: number;
   largura: number;
   moldurasSelecionadas: string[];
@@ -37,18 +38,21 @@ export interface QuadroParaSalvar {
   espessuraPaspatur: number;
   medidaFornecidaCliente: boolean;
   limpezaSelecionada: boolean;
-  valorCalculado: number; // preco final desse quadro
+  valorCalculado: number;
 }
 
-export interface CreatePedidoDto {
+// Para criar/atualizar pedido (envio para API)
+export interface PedidoApiDto {
   nomeAtendente: string;
   nomeCliente: string;
   telefoneCliente: string;
   observacoes: string;
-  quadros: QuadroParaSalvar[];
+  quadros: QuadroNoEstado[];
   valor_final_calculado: number;
+  valor_final_manual?: number;
 }
 
+// Resposta ao salvar pedido
 export interface SalvarPedidoResponse {
   message: string;
   pedidoId: number;
@@ -58,6 +62,7 @@ export interface SalvarPedidoResponse {
   pdf_os_url?: string;
 }
 
+// Pedido para exibir no backlog
 export interface PedidoBacklog {
   id: number;
   numero_pedido: string;
@@ -66,9 +71,20 @@ export interface PedidoBacklog {
   status: 'A Fazer' | 'Já Feito' | 'Entregue';
   valor_final: number;
   cliente_nome: string;
-  
-  pdf_filename: string | null; 
+  pdf_filename: string | null;
   pdf_os_filename: string | null;
+  pdf_pedido_url: string | null;
+  pdf_os_url: string | null;
+}
+
+// Para edição (carregar na tela de orçamento)
+export interface PedidoParaEdicao {
+  atendente: string;
+  clienteNome: string;
+  clienteTelefone: string;
+  observacoes: string;
+  quadros: QuadroNoEstado[];
+  valor_final_salvo: number;
 }
 
 export interface SimpleApiResponse {

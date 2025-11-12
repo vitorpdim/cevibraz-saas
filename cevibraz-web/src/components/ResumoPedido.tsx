@@ -1,15 +1,17 @@
 import React from "react";
 import { Trash2 } from "lucide-react";
-import type { QuadroParaSalvar } from "../types";
+import type { QuadroNoEstado } from "../types";
 
 interface ResumoPedidoProps {
-  quadros: QuadroParaSalvar[];
+  quadros: QuadroNoEstado[];
   observacoes: string;
   valorTotalPedido: number;
+  valorFinalManual?: number;
   onObservacoesChange: (value: string) => void;
   onLimparPedido: () => void;
   onSalvarPedido: () => void;
   onDeleteQuadro: (index: number) => void;
+  onValorFinalManualChange?: (valor: number) => void;
 }
 
 export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
@@ -17,13 +19,15 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     quadros,
     observacoes,
     valorTotalPedido,
+    valorFinalManual,
     onObservacoesChange,
     onLimparPedido,
     onSalvarPedido,
     onDeleteQuadro,
+    onValorFinalManualChange,
   } = props;
 
-  const formatarDescricaoQuadro = (quadro: QuadroParaSalvar): string => {
+  const formatarDescricaoQuadro = (quadro: QuadroNoEstado): string => {
     let desc = `${quadro.altura}cm x ${quadro.largura}cm. `;
     desc += `Molduras: ${quadro.moldurasSelecionadas.join(", ") || "N/A"}. `;
     desc += `Materiais: ${quadro.materiaisSelecionados.join(", ") || "N/A"}.`;
@@ -79,8 +83,24 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
 
       <div className="total-container">
         <span className="total-label">VALOR TOTAL:</span>
-        <span className="total-value">R$ {valorTotalPedido.toFixed(2)}</span>
+        <span className="total-value">
+          R$ {valorFinalManual !== undefined ? valorFinalManual.toFixed(2) : valorTotalPedido.toFixed(2)}
+        </span>
       </div>
+      {onValorFinalManualChange && (
+        <div className="form-group" style={{ marginTop: 8 }}>
+          <label htmlFor="valorFinalManual">Editar Valor Final (opcional)</label>
+          <input
+            type="number"
+            className="form-control"
+            id="valorFinalManual"
+            value={valorFinalManual ?? valorTotalPedido}
+            onChange={(e) => onValorFinalManualChange(Number(e.target.value))}
+            min={0}
+            step={0.01}
+          />
+        </div>
+      )}
 
       <div className="form-actions">
         <button className="btn btn-danger" onClick={onLimparPedido}>

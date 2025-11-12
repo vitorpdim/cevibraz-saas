@@ -19,6 +19,10 @@ const router = createBrowserRouter([
         element: <OrcamentoPage />,
       },
       {
+        path: "orcamento/:pedidoId", // <-- nova rota dinâmica
+        element: <OrcamentoPage />,
+      },
+      {
         path: "backlog",
         element: <BacklogPage />,
       },

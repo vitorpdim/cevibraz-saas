@@ -4,10 +4,11 @@ import type {
     Material,
     CalcularQuadroDto,
     CalculoResponse,
-    CreatePedidoDto,
+    PedidoApiDto, // Corrigido aqui
     PedidoBacklog,
     SimpleApiResponse,
-    SalvarPedidoResponse
+    SalvarPedidoResponse,
+    PedidoParaEdicao
 } from "../types";
 
 const API_URL = "https://cevibraz-api.onrender.com";
@@ -36,7 +37,7 @@ export const calcularPrecoQuadro = async (
   return response.data;
 };
 
-export const salvarPedido = async (dto: CreatePedidoDto): Promise<SalvarPedidoResponse> => {
+export const salvarPedido = async (dto: PedidoApiDto): Promise<SalvarPedidoResponse> => {
   const response = await apiClient.post('/api/pedidos', dto);
   return response.data;
 };
@@ -66,6 +67,16 @@ export const fetchPdfBase64 = async (
   const url = tipo === 'pdf' ? `/api/pedidos/${id}/pdf` : `/api/pedidos/${id}/os/pdf`;
   const response = await apiClient.get(url);
   return response.data.pdfData;
+};
+
+export const fetchPedidoById = async (id: number): Promise<PedidoParaEdicao> => {
+  const response = await apiClient.get(`/api/pedidos/${id}`);
+  return response.data;
+};
+
+export const updatePedido = async (id: number, dto: PedidoApiDto): Promise<SalvarPedidoResponse> => {
+  const response = await apiClient.put(`/api/pedidos/${id}`, dto);
+  return response.data;
 };
 
 export default apiClient;

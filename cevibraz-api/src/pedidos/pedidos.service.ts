@@ -58,8 +58,10 @@ export class PedidosService {
       observacoes,
       quadros,
       valor_final_calculado,
+      valor_final_manual,
     } = dto;
 
+    const valorFinalParaSalvar = valor_final_manual ?? valor_final_calculado;
     return this.entityManager.transaction(async (manager) => {
       const cliente = await this.clientesService.findOrCreate(
         nomeCliente,
@@ -67,7 +69,7 @@ export class PedidosService {
       );
 
       const [lastPedido] = await manager.query<MaxPedidoResult[]>(
-        'SELECT MAX(CAST(numero_pedido AS INTEGER)) as max_num FROM pedidos',
+        "SELECT MAX(CAST(NULLIF(regexp_replace(numero_pedido, '[^0-9]', '', 'g'), '') AS INTEGER)) as max_num FROM pedidos",
       );
       const proximoNumero = (lastPedido?.max_num || 0) + 1;
       const numeroPedidoFormatado = String(proximoNumero).padStart(4, '0');
@@ -77,7 +79,7 @@ export class PedidosService {
         cliente: cliente,
         atendente: nomeAtendente,
         observacoes: observacoes,
-        valor_final: valor_final_calculado,
+        valor_final: valorFinalParaSalvar,
         status: 'A Fazer',
       });
       await manager.save(novoPedido);
@@ -95,7 +97,7 @@ export class PedidosService {
         this.pdfService.gerarPdfPedido(
           novoPedido,
           quadrosParaPdf,
-          valor_final_calculado,
+          valorFinalParaSalvar,
         ),
         this.pdfService.gerarPdfOs(novoPedido, quadrosParaPdf),
       ]);
@@ -116,7 +118,10 @@ export class PedidosService {
   }
 
   async update(id: number, dto: UpdatePedidoDto) {
-    const { observacoes, quadros, valor_final_calculado } = dto;
+    const { observacoes, quadros, valor_final_calculado, valor_final_manual } =
+      dto;
+
+    const valorFinalParaSalvar = valor_final_manual ?? valor_final_calculado;
 
     return this.entityManager.transaction(async (manager) => {
       const pedido = await manager.findOne(Pedido, {
@@ -135,7 +140,7 @@ export class PedidosService {
       );
 
       pedido.observacoes = observacoes;
-      pedido.valor_final = valor_final_calculado;
+      pedido.valor_final = valorFinalParaSalvar;
 
       this.logger.log(
         `Regerando PDFs para o pedido ${pedido.numero_pedido}...`,
@@ -144,7 +149,7 @@ export class PedidosService {
         this.pdfService.gerarPdfPedido(
           pedido,
           quadrosParaPdf,
-          valor_final_calculado,
+          valorFinalParaSalvar,
         ),
         this.pdfService.gerarPdfOs(pedido, quadrosParaPdf),
       ]);
