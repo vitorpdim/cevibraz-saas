@@ -36,6 +36,7 @@ export class PedidosController {
     if (error instanceof Error) {
       return error.message;
     }
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
     return String(error);
   }
 

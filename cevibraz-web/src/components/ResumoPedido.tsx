@@ -1,4 +1,5 @@
 import React from "react";
+import { Trash2 } from "lucide-react";
 import type { QuadroParaSalvar } from "../types";
 
 interface ResumoPedidoProps {
@@ -22,7 +23,6 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     onDeleteQuadro,
   } = props;
 
-  // func helper para formatar a descrição do quadro
   const formatarDescricaoQuadro = (quadro: QuadroParaSalvar): string => {
     let desc = `${quadro.altura}cm x ${quadro.largura}cm. `;
     desc += `Molduras: ${quadro.moldurasSelecionadas.join(", ") || "N/A"}. `;
@@ -34,81 +34,62 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
   };
 
   return (
-    <div className="container-resumo-pedido">
-      <h2 className="titulo-form">Resumo do Pedido</h2>
+    <section className="card resumo-card">
+      <h3>Resumo do Pedido</h3>
 
-      {/* */}
-      <div className="mb-3" id="quadros-adicionados-lista">
+      <div className="quadros-lista">
         {quadros.length === 0 ? (
-          <p>Nenhum quadro adicionado.</p>
+          <p className="empty-state">Nenhum quadro adicionado ainda.</p>
         ) : (
-          <ul className="list-group">
+          <ul className="quadros-list">
             {quadros.map((quadro, index) => (
-              <li
-                key={index}
-                className="list-group-item d-flex justify-content-between align-items-center"
-              >
-                <div>
-                  <strong>{formatarDescricaoQuadro(quadro)}</strong>
-                  <br />
-                  <span className="text-success">
-                    Valor: R$ {quadro.valorCalculado.toFixed(2)}
+              <li key={index} className="quadro-item">
+                <div className="quadro-info">
+                  <span className="quadro-desc">
+                    {formatarDescricaoQuadro(quadro)}
+                  </span>
+                  <span className="quadro-valor">
+                    R$ {quadro.valorCalculado.toFixed(2)}
                   </span>
                 </div>
-                <div>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => onDeleteQuadro(index)}
-                  >
-                    Excluir
-                  </button>
-                  {/* btn de editar vai vir no futuro */}
-                </div>
+                <button
+                  className="btn-icon-danger"
+                  onClick={() => onDeleteQuadro(index)}
+                  aria-label="Excluir quadro"
+                >
+                  <Trash2 size={16} />
+                </button>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      {/* */}
-      <div className="mb-3" id="observacoes-pedido">
-        <label htmlFor="observacoes" className="form-label">
-          Observações Gerais do Pedido
-        </label>
+      <div className="form-group">
+        <label htmlFor="observacoes">Observações</label>
         <textarea
           className="form-control"
           id="observacoes"
           rows={3}
           value={observacoes}
           onChange={(e) => onObservacoesChange(e.target.value)}
+          placeholder="Observações gerais do pedido..."
         ></textarea>
       </div>
 
-      {/* */}
-      <div className="container-total" id="container-total">
-        <h3>VALOR TOTAL:</h3>
-        <h3 id="valorTotalPedido">R$ {valorTotalPedido.toFixed(2)}</h3>
+      <div className="total-container">
+        <span className="total-label">VALOR TOTAL:</span>
+        <span className="total-value">R$ {valorTotalPedido.toFixed(2)}</span>
       </div>
 
-      {/* */}
-      <div className="botoes-acao-pedido" id="botoes-acao-pedido">
-        <button
-          type="button"
-          className="btn btn-danger me-2"
-          onClick={onLimparPedido}
-        >
+      <div className="form-actions">
+        <button className="btn btn-danger" onClick={onLimparPedido}>
           Limpar Pedido
         </button>
-        <button
-          type="button"
-          className="btn btn-success"
-          onClick={onSalvarPedido}
-        >
-          Salvar Pedido e Gerar PDF
+        <button className="btn btn-success" onClick={onSalvarPedido}>
+          Salvar e Gerar PDF
         </button>
       </div>
-
-      {/* modal vai ser reimplementado dps */}
-    </div>
+    </section>
   );
 };

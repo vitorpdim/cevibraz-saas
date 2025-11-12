@@ -1,15 +1,16 @@
-import { Outlet } from "react-router-dom";
-import { Header } from "./components/Header";
+import { Sidebar } from './components/Sidebar';
+import { ThemeToggle } from './components/ThemeToggle';
+import { Outlet } from 'react-router-dom';
 
 function App() {
   return (
-    <>
-      <Header />
-      <main>
-        {/*  */}
+    <div className="app-container">
+      <Sidebar />
+      <div className="main-content">
+        <ThemeToggle />
         <Outlet />
-      </main>
-    </>
+      </div>
+    </div>
   );
 }
 

@@ -198,28 +198,21 @@ export class PdfService implements OnModuleInit {
   }
 
   // =================================================================
-  // FUNÇÕES DE DESENHO: PEDIDO (Source 453)
+  // FUNÇÕES DE DESENHO: PEDIDO (Source 558)
   // =================================================================
 
   private desenharHeaderPedido(doc: PDFDoc, pedido: Pedido) {
-    // Reservamos um bloco de header mais consistente para evitar sobreposição com títulos/elementos centrais.
-    // Diminuímos levemente a altura do logo e alinhamos a caixa de informações ao topo deste bloco.
-    const logoWidth = 200;
-    const logoHeight = 60; // reduzido de 80 para prevenir overlap visual
-    const headerTop = MARGEM_TOPO - 10; // recuamos um pouco para dar espaço ao topo
+    const yInicio = MARGEM_TOPO - 30; // yInicio = 42
 
-    // Esquerda (Logo)
     if (this.logoBuffer) {
-      doc.image(this.logoBuffer, MARGEM_ESQUERDA, headerTop, {
-        width: logoWidth,
-        height: logoHeight,
+      doc.image(this.logoBuffer, MARGEM_ESQUERDA, yInicio, {
+        fit: [150, 80],
       });
     }
 
-    // Caixa de informações (lado direito) alinhada ao topo do header e fora da área do logo
+    // Direita (Caixa de Informações)
     const xDireita = LARGURA_DOC_A4 - MARGEM_DIREITA - 180;
-    // Garantimos que a caixa esteja no topo do header (não mais "à meia altura" que sobrepunha o logo)
-    const yDireita = headerTop + 6;
+    const yDireita = yInicio + 10;
     const alturaCaixa = 50;
 
     doc.rect(xDireita, yDireita, 180, alturaCaixa).stroke();
@@ -304,18 +297,17 @@ export class PdfService implements OnModuleInit {
     y: number,
   ): number {
     const tableTop = y + 20;
-    const colWidths = [30, 80, 200, 40, 70, 70];
+    const colWidths = [30, 80, 248, 40, 70];
+
     const colPositions = [MARGEM_ESQUERDA];
     colWidths.reduce((acc, width) => {
       colPositions.push(acc + width);
       return acc + width;
     }, MARGEM_ESQUERDA);
-
-    // Headers da Tabela
     doc.font('Helvetica-Bold').fontSize(8);
     doc
       .rect(colPositions[0], tableTop, LARGURA_CONTEUDO, 20)
-      .fillAndStroke('#f2f2f2', '#000'); // Stroke #000 (Preto)
+      .fillAndStroke('#f2f2f2', '#000');
     doc.fillColor('#000');
     doc.text('Item', colPositions[0] + 5, tableTop + 7, {
       width: colWidths[0] - 10,
@@ -333,12 +325,9 @@ export class PdfService implements OnModuleInit {
       width: colWidths[3] - 10,
       align: 'center',
     });
-    doc.text('Valor Unitário', colPositions[4] + 5, tableTop + 7, {
+    // coluna "valor unitário" REMOVIDA no BAGUIO
+    doc.text('Valor Total', colPositions[4] + 5, tableTop + 7, {
       width: colWidths[4] - 10,
-      align: 'center',
-    });
-    doc.text('Valor Total', colPositions[5] + 5, tableTop + 7, {
-      width: colWidths[5] - 10,
       align: 'center',
     });
 
@@ -347,9 +336,9 @@ export class PdfService implements OnModuleInit {
 
     grupos.forEach((grupo, index) => {
       const desc = this.formatarDescricaoQuadro(grupo.detalhes, true);
-      const valorUnit = grupo.detalhes.valorCalculado;
+      const valorUnit = grupo.detalhes.valorCalculado; // Ainda precisamos disso para o total
       const valorTotalGrupo = valorUnit * grupo.quantidade;
-      const descHeight = doc.heightOfString(desc, { width: colWidths[2] - 10 });
+      const descHeight = doc.heightOfString(desc, { width: colWidths[2] - 10 }); // Usa a nova largura
       const currentLineHeight = Math.max(40, descHeight + 15);
 
       if (yAtual + currentLineHeight > ALTURA_DOC_A4 - MARGEM_FUNDO - 120) {
@@ -376,23 +365,15 @@ export class PdfService implements OnModuleInit {
           width: colWidths[3] - 10,
           align: 'center',
         });
-        doc.text('Valor Unitário', colPositions[4] + 5, yAtual + 7, {
+        doc.text('Valor Total', colPositions[4] + 5, yAtual + 7, {
           width: colWidths[4] - 10,
-          align: 'center',
-        });
-        doc.text('Valor Total', colPositions[5] + 5, yAtual + 7, {
-          width: colWidths[5] - 10,
           align: 'center',
         });
         yAtual += 20;
         doc.font('Helvetica').fontSize(8);
       }
 
-      const verticalPadding = Math.max(
-        6,
-        Math.round((currentLineHeight - 12) / 2),
-      );
-      const yCell = yAtual + verticalPadding;
+      const yCell = yAtual + 7;
       doc.text((index + 1).toString(), colPositions[0] + 5, yCell, {
         width: colWidths[0] - 10,
         align: 'center',
@@ -409,17 +390,13 @@ export class PdfService implements OnModuleInit {
         width: colWidths[3] - 10,
         align: 'center',
       });
-      doc.text(valorUnit.toFixed(2), colPositions[4] + 5, yCell, {
+      doc.text(valorTotalGrupo.toFixed(2), colPositions[4] + 5, yCell, {
         width: colWidths[4] - 10,
         align: 'right',
       });
-      doc.text(valorTotalGrupo.toFixed(2), colPositions[5] + 5, yCell, {
-        width: colWidths[5] - 10,
-        align: 'right',
-      });
 
+      // Desenha as bordas
       doc.strokeColor('#ccc');
-
       for (let i = 0; i <= colWidths.length; i++) {
         doc
           .moveTo(colPositions[i], yAtual)
@@ -430,7 +407,6 @@ export class PdfService implements OnModuleInit {
         .moveTo(MARGEM_ESQUERDA, yAtual + currentLineHeight)
         .lineTo(LARGURA_DOC_A4 - MARGEM_DIREITA, yAtual + currentLineHeight)
         .stroke();
-
       yAtual += currentLineHeight;
     });
 
@@ -444,11 +420,10 @@ export class PdfService implements OnModuleInit {
     valorFinal: number | string,
     y: number,
   ) {
-    const colEsquerdaWidth = LARGURA_CONTEUDO * 0.6;
-    const colDireitaWidth = LARGURA_CONTEUDO * 0.4;
-    const xDireita = MARGEM_ESQUERDA + colEsquerdaWidth;
+    const colEsquerdaWidth = LARGURA_CONTEUDO * 0.6; // 280.8
+    const colDireitaWidth = LARGURA_CONTEUDO * 0.4; // 187.2
+    const xDireita = MARGEM_ESQUERDA + colEsquerdaWidth; // 72 + 280.8 = 352.8
     const alturaCaixa = 120;
-
     const yFooterStart = y + 20;
 
     if (yFooterStart + alturaCaixa > ALTURA_DOC_A4 - MARGEM_FUNDO) {
@@ -457,16 +432,11 @@ export class PdfService implements OnModuleInit {
     } else {
       y = yFooterStart;
     }
-
     const valorFinalNumerico = parseFloat(String(valorFinal)) || 0;
-
     doc.font('Helvetica').fontSize(8).fillColor('#333');
-
-    // --- Bloco Esquerda (Obs) ---
     doc.rect(MARGEM_ESQUERDA, y, colEsquerdaWidth, alturaCaixa).stroke();
 
     let yAtualEsquerda = y + 5;
-
     doc.font('Helvetica-Bold');
     doc.text('CONDIÇÃO DE PAGAMENTO:', MARGEM_ESQUERDA + 5, yAtualEsquerda);
 
@@ -490,13 +460,12 @@ export class PdfService implements OnModuleInit {
     // --- Bloco Direita (Totais) ---
     doc.rect(xDireita, y, colDireitaWidth, alturaCaixa).stroke();
 
-    let yAtualDireita = y + 10;
+    let yAtualDireita = y + 5;
     const xTextoDireita = xDireita + 5;
     const optionsDireita = {
       align: 'right' as const,
       width: colDireitaWidth - 10,
     };
-    // --- FIM DA CORREÇÃO ---
 
     doc.font('Helvetica').fontSize(8);
     doc.text('Total da Mercadoria:', xTextoDireita, yAtualDireita);
@@ -511,36 +480,51 @@ export class PdfService implements OnModuleInit {
     doc.text('Frete:', xTextoDireita, yAtualDireita);
     doc.text('R$ 0,00', xTextoDireita, yAtualDireita, optionsDireita);
 
-    yAtualDireita += 30;
+    yAtualDireita += 30; // pula espaço
     doc.font('Helvetica-Bold').fontSize(11);
-    doc.text('TOTAL GERAL:', xTextoDireita, yAtualDireita);
 
-    yAtualDireita += 15;
+    // CORRIGIDO (Bug 3): Label e Valor na MESMA linha 'y'
+    doc.text('TOTAL GERAL:', xTextoDireita, yAtualDireita);
     doc.text(
       `R$ ${valorFinalNumerico.toFixed(2)}`,
       xTextoDireita,
       yAtualDireita,
       optionsDireita,
     );
-    const yFooterEmpresa = ALTURA_DOC_A4 - MARGEM_FUNDO - 10;
+
+    // --- Rodapé da Empresa (Layout 453) ---
+
+    // CORRIGIDO (Bug 4): Sobreposição
+    const yFooterEmpresa = ALTURA_DOC_A4 - MARGEM_FUNDO + 10; // y = 730
     doc.font('Helvetica').fontSize(8.6).fillColor('#333');
+
+    // 1. Desenha o Endereço
     doc.text(
       'Av. Prisciliana de Castilho n° 422 - Bairro: Centro - Caraguatatuba/SP - CEP: 11660-330',
       MARGEM_ESQUERDA,
-      yFooterEmpresa,
+      yFooterEmpresa, // y=730
       { align: 'center', width: LARGURA_CONTEUDO },
     );
+
+    // 2. Desenha o Telefone e Ícone ABAIXO (y + 15)
+    const yPhone = yFooterEmpresa + 15; // y = 745
+    const phoneText = 'Telefone: (12) 99143-5644';
+    const textWidth = doc.widthOfString(phoneText);
+
+    // Calcula o X inicial do texto (para centralizá-lo)
+    const xTextStart = (LARGURA_DOC_A4 - textWidth) / 2;
+
     if (this.iconeWhatsappBuffer) {
-      const textWidth = doc.widthOfString('Telefone: (12) 99143-5644');
-      const xIcon = LARGURA_DOC_A4 / 2 - textWidth / 2 + 55;
-      doc.image(this.iconeWhatsappBuffer, xIcon, yFooterEmpresa + 12, {
-        width: 10,
-      });
+      // Posiciona o ícone 15pt à esquerda do texto
+      const xIcon = xTextStart - 15;
+      doc.image(this.iconeWhatsappBuffer, xIcon, yPhone - 2, { width: 10 });
     }
+
+    // Desenha o texto do telefone
     doc.text(
-      'Telefone: (12) 99143-5644',
+      phoneText,
       MARGEM_ESQUERDA,
-      yFooterEmpresa + 13,
+      yPhone, // y=745
       { align: 'center', width: LARGURA_CONTEUDO },
     );
   }

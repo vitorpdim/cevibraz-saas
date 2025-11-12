@@ -8,9 +8,6 @@ import {
   fetchPdfBase64,
 } from "../services/api";
 
-// Importa o CSS
-import "./BacklogPage.css";
-
 type AbaStatus = "a-fazer" | "ja-feito" | "entregue";
 
 // CORREÇÃO: Removida a função 'getStatusLabel' (não usada)
@@ -279,4 +276,3 @@ export const BacklogPage: React.FC = () => {
     </div>
   );
 };
-    

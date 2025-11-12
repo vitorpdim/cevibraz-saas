@@ -304,51 +304,53 @@ export function OrcamentoPage() {
   }
 
   return (
-    <div className="container-principal">
-      <OrcamentoForm
-        moldurasList={moldurasList}
-        materiaisList={materiaisList}
-        atendente={atendente}
-        cliente={cliente}
-        telefone={telefone}
-        altura={formQuadro.altura}
-        largura={formQuadro.largura}
-        medidaCliente={formQuadro.medidaCliente}
-        molduraSelecionada={formQuadro.molduraSelecionada}
-        materiaisDoQuadro={formQuadro.materiaisDoQuadro}
-        espessuraPaspatur={formQuadro.espessuraPaspatur}
-        isPaspaturVisivel={formQuadro.isPaspaturVisivel}
-        resumoDoQuadro={formQuadro.resumoDoQuadro}
-        onAtendenteChange={setAtendente}
-        onClienteChange={setCliente}
-        onTelefoneChange={setTelefone}
-        onAlturaChange={(v) => setFormQuadro((f) => ({ ...f, altura: v }))}
-        onLarguraChange={(v) => setFormQuadro((f) => ({ ...f, largura: v }))}
-        onMedidaClienteChange={(v) =>
-          setFormQuadro((f) => ({ ...f, medidaCliente: v }))
-        }
-        onMolduraSelecionadaChange={(v) =>
-          setFormQuadro((f) => ({ ...f, molduraSelecionada: v }))
-        }
-        onAddMoldura={handleAddMoldura}
-        onRemoveUltimaMoldura={handleRemoveUltimaMoldura}
-        onMaterialChange={handleMaterialChange}
-        onEspessuraPaspaturChange={(v) =>
-          setFormQuadro((f) => ({ ...f, espessuraPaspatur: v }))
-        }
-        onLimparCampos={handleLimparCampos}
-        onAdicionarQuadro={handleAdicionarQuadro}
-      />
+    <div className="page-content">
+      <div className="container-principal">
+        <OrcamentoForm
+          moldurasList={moldurasList}
+          materiaisList={materiaisList}
+          atendente={atendente}
+          cliente={cliente}
+          telefone={telefone}
+          altura={formQuadro.altura}
+          largura={formQuadro.largura}
+          medidaCliente={formQuadro.medidaCliente}
+          molduraSelecionada={formQuadro.molduraSelecionada}
+          materiaisDoQuadro={formQuadro.materiaisDoQuadro}
+          espessuraPaspatur={formQuadro.espessuraPaspatur}
+          isPaspaturVisivel={formQuadro.isPaspaturVisivel}
+          resumoDoQuadro={formQuadro.resumoDoQuadro}
+          onAtendenteChange={setAtendente}
+          onClienteChange={setCliente}
+          onTelefoneChange={setTelefone}
+          onAlturaChange={(v) => setFormQuadro((f) => ({ ...f, altura: v }))}
+          onLarguraChange={(v) => setFormQuadro((f) => ({ ...f, largura: v }))}
+          onMedidaClienteChange={(v) =>
+            setFormQuadro((f) => ({ ...f, medidaCliente: v }))
+          }
+          onMolduraSelecionadaChange={(v) =>
+            setFormQuadro((f) => ({ ...f, molduraSelecionada: v }))
+          }
+          onAddMoldura={handleAddMoldura}
+          onRemoveUltimaMoldura={handleRemoveUltimaMoldura}
+          onMaterialChange={handleMaterialChange}
+          onEspessuraPaspaturChange={(v) =>
+            setFormQuadro((f) => ({ ...f, espessuraPaspatur: v }))
+          }
+          onLimparCampos={handleLimparCampos}
+          onAdicionarQuadro={handleAdicionarQuadro}
+        />
 
-      <ResumoPedido
-        quadros={quadrosDoPedido}
-        observacoes={observacoes}
-        valorTotalPedido={valorTotalPedido}
-        onObservacoesChange={setObservacoes}
-        onLimparPedido={handleLimparPedido}
-        onSalvarPedido={handleSalvarPedido}
-        onDeleteQuadro={handleDeleteQuadro}
-      />
+        <ResumoPedido
+          quadros={quadrosDoPedido}
+          observacoes={observacoes}
+          valorTotalPedido={valorTotalPedido}
+          onObservacoesChange={setObservacoes}
+          onLimparPedido={handleLimparPedido}
+          onSalvarPedido={handleSalvarPedido}
+          onDeleteQuadro={handleDeleteQuadro}
+        />
+      </div>
     </div>
   );
 }

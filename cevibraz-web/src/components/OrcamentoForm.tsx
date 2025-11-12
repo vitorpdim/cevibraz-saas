@@ -62,40 +62,34 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
   } = props;
 
   return (
-    <div className="form-orcamento">
-      <h2 className="titulo-form">Cálculo de Orçamento</h2>
-
-      {/* */}
-      <div className="mb-3 secao-form">
-        <div className="row">
-          <div className="col-md-4">
-            <label htmlFor="atendente" className="form-label">
-              Atendente
-            </label>
+    <div className="form-section-wrapper">
+      <section className="card">
+        <h3>Informações do Atendimento</h3>
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="atendente">Atendente</label>
             <input
               type="text"
               className="form-control"
               id="atendente"
               value={atendente}
               onChange={(e) => onAtendenteChange(e.target.value)}
+              placeholder="Nome do atendente"
             />
           </div>
-          <div className="col-md-4">
-            <label htmlFor="cliente" className="form-label">
-              Cliente
-            </label>
+          <div className="form-group">
+            <label htmlFor="cliente">Cliente</label>
             <input
               type="text"
               className="form-control"
               id="cliente"
               value={cliente}
               onChange={(e) => onClienteChange(e.target.value)}
+              placeholder="Nome do cliente"
             />
           </div>
-          <div className="col-md-4">
-            <label htmlFor="telefone" className="form-label">
-              Telefone
-            </label>
+          <div className="form-group">
+            <label htmlFor="telefone">Telefone</label>
             <input
               type="text"
               className="form-control"
@@ -106,101 +100,87 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* */}
-      <div className="mb-3 secao-form">
-        <div className="row align-items-end">
-          <div className="col-md-3">
-            <label htmlFor="altura" className="form-label">
-              Altura (cm)
-            </label>
+      <section className="card">
+        <h3>Quadro - Dimensões e Materiais</h3>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="altura">Altura (cm)</label>
             <input
               type="number"
               className="form-control"
               id="altura"
               value={altura}
               onChange={(e) => onAlturaChange(e.target.value)}
+              placeholder="0"
             />
           </div>
-          <div className="col-md-3">
-            <label htmlFor="largura" className="form-label">
-              Largura (cm)
-            </label>
+          <div className="form-group">
+            <label htmlFor="largura">Largura (cm)</label>
             <input
               type="number"
               className="form-control"
               id="largura"
               value={largura}
               onChange={(e) => onLarguraChange(e.target.value)}
+              placeholder="0"
             />
           </div>
-          <div className="col-md-6 d-flex align-items-center mt-4">
-            <div className="form-check">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="medida-cliente"
-                checked={medidaCliente}
-                onChange={(e) => onMedidaClienteChange(e.target.checked)}
-              />
-              <label className="form-check-label" htmlFor="medida-cliente">
-                Medida fornecida pelo cliente (não arredondar)
-              </label>
-            </div>
+        </div>
+
+        <div className="form-check-group">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id="medida-cliente"
+            checked={medidaCliente}
+            onChange={(e) => onMedidaClienteChange(e.target.checked)}
+          />
+          <label className="form-check-label" htmlFor="medida-cliente">
+            Medida fornecida pelo cliente
+          </label>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="molduraSelect">Moldura</label>
+          <div className="input-group">
+            <select
+              className="form-control"
+              id="molduraSelect"
+              value={molduraSelecionada}
+              onChange={(e) => onMolduraSelecionadaChange(e.target.value)}
+            >
+              <option value="">Selecione uma moldura...</option>
+              {moldurasList.map((moldura) => (
+                <option key={moldura.id} value={moldura.nome}>
+                  {moldura.nome} (Cod: {moldura.codigo})
+                </option>
+              ))}
+            </select>
+            <button className="btn btn-primary" onClick={onAddMoldura}>
+              Adicionar
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={onRemoveUltimaMoldura}
+            >
+              Remover
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* */}
-      <div className="mb-3 secao-form">
-        <label htmlFor="molduraSelect" className="form-label">
-          Selecionar Moldura
-        </label>
-        <div className="input-group">
-          <select
-            className="form-select"
-            id="molduraSelect"
-            value={molduraSelecionada}
-            onChange={(e) => onMolduraSelecionadaChange(e.target.value)}
-          >
-            <option value="">Selecione uma moldura...</option>
-            {moldurasList.map((moldura) => (
-              <option key={moldura.id} value={moldura.nome}>
-                {moldura.nome} (Cod: {moldura.codigo})
-              </option>
-            ))}
-          </select>
-          <button
-            className="btn btn-outline-secondary"
-            type="button"
-            onClick={onAddMoldura}
-          >
-            Adicionar
-          </button>
-          <button
-            className="btn btn-outline-danger"
-            type="button"
-            onClick={onRemoveUltimaMoldura}
-          >
-            Remover Última
-          </button>
-        </div>
-      </div>
-
-      {/* */}
-      <div className="mb-3 secao-form">
-        <label className="form-label">Selecionar Materiais</label>
-        <div id="materiaisCheckboxes" className="row">
-          {materiaisList.map((material) => (
-            <div className="col-md-3" key={material.id}>
-              <div className="form-check">
+        <div className="form-group">
+          <label>Materiais</label>
+          <div className="materials-grid">
+            {materiaisList.map((material) => (
+              <div className="form-check-group" key={material.id}>
                 <input
                   className="form-check-input"
                   type="checkbox"
                   value={material.nome}
                   id={`material-${material.id}`}
-                  data-tipo={material.tipo_calculo}
                   checked={materiaisDoQuadro.includes(material.nome)}
                   onChange={(e) =>
                     onMaterialChange(e.target.value, e.target.checked)
@@ -213,60 +193,48 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
                   {material.nome}
                 </label>
               </div>
+            ))}
+          </div>
+
+          {isPaspaturVisivel && (
+            <div className="form-group paspatur-input">
+              <label htmlFor="paspaturEspessura">
+                Espessura do Paspatur (cm)
+              </label>
+              <input
+                type="number"
+                className="form-control"
+                id="paspaturEspessura"
+                step="0.5"
+                min="0"
+                value={espessuraPaspatur}
+                onChange={(e) => onEspessuraPaspaturChange(e.target.value)}
+                placeholder="0"
+              />
             </div>
-          ))}
+          )}
         </div>
 
-        {/* renderizaçao condicional do paspatur */}
-        {isPaspaturVisivel && (
-          <div id="container-paspatur" className="mt-2">
-            <label htmlFor="paspaturEspessura" className="form-label">
-              Espessura do Paspatur (cm)
-            </label>
-            <input
-              type="number"
-              className="form-control"
-              id="paspaturEspessura"
-              step="0.5"
-              min="0"
-              value={espessuraPaspatur}
-              onChange={(e) => onEspessuraPaspaturChange(e.target.value)}
-            />
-          </div>
-        )}
-      </div>
+        <div className="form-group">
+          <label htmlFor="resumoQuadro">Resumo do Quadro</label>
+          <textarea
+            className="form-control"
+            id="resumoQuadro"
+            rows={4}
+            readOnly
+            value={resumoDoQuadro}
+          ></textarea>
+        </div>
 
-      {/* */}
-      <div className="mb-3 secao-form">
-        <label htmlFor="resumoQuadro" className="form-label">
-          Resumo do Quadro Atual
-        </label>
-        <textarea
-          className="form-control"
-          id="resumoQuadro"
-          rows={4}
-          readOnly
-          value={resumoDoQuadro}
-        ></textarea>
-      </div>
-
-      {/* */}
-      <div className="mb-3 d-flex justify-content-end">
-        <button
-          type="button"
-          className="btn btn-secondary me-2"
-          onClick={onLimparCampos}
-        >
-          Limpar Campos
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={onAdicionarQuadro}
-        >
-          Adicionar Quadro ao Pedido
-        </button>
-      </div>
+        <div className="form-actions">
+          <button className="btn btn-secondary" onClick={onLimparCampos}>
+            Limpar Campos
+          </button>
+          <button className="btn btn-success" onClick={onAdicionarQuadro}>
+            Adicionar Quadro
+          </button>
+        </div>
+      </section>
     </div>
   );
 };

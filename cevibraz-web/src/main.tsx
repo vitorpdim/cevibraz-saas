@@ -1,13 +1,13 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import App from "./App.tsx";
 import { OrcamentoPage } from "./pages/OrcamentoPage.tsx";
 import { BacklogPage } from "./pages/BacklogPage.tsx";
-
-import "./bootstrap.min.css";
-import "./style.css";
+import { MaintenancePage } from "./pages/MaintenancePage.tsx";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import "./index.css";
 
 const router = createBrowserRouter([
   {
@@ -22,12 +22,26 @@ const router = createBrowserRouter([
         path: "backlog",
         element: <BacklogPage />,
       },
+      {
+        path: "molduras",
+        element: <MaintenancePage />,
+      },
+      {
+        path: "estoque",
+        element: <MaintenancePage />,
+      },
+      {
+        path: "dashboard",
+        element: <MaintenancePage />,
+      },
     ],
   },
 ]);
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <RouterProvider router={router} />
-  </React.StrictMode>
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <ThemeProvider>
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  </StrictMode>
 );
