@@ -150,6 +150,14 @@ body {
   margin: 0 auto;
 }
 
+.container-principal {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
 .orcamento-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -506,7 +514,7 @@ body {
 }
 
 .tab-button.active {
-  background: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
   color: white;
 }
 
@@ -551,37 +559,20 @@ body {
 }
 
 .btn-pdf,
-.btn-os {
+.btn-os,
+.btn-avancar {
   padding: 6px 12px;
   border: none;
   border-radius: 6px;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
-.btn-pdf {
-  background: var(--color-primary);
-  color: white;
-}
-
-.btn-os {
-  background: var(--color-secondary);
-  color: #744210;
-}
-
-.btn-avancar {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
   color: white;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .btn-delete {
-  background: #f56565;
+  background: linear-gradient(135deg, #f56565, #e53e3e);
   color: white;
   padding: 6px 12px;
   border: none;

@@ -48,6 +48,9 @@ export function OrcamentoPage() {
   const { pedidoId } = useParams<{ pedidoId?: string }>();
   const navigate = useNavigate();
   const [editando, setEditando] = useState(false);
+  const [valorFinalManual, setValorFinalManual] = useState<number | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     const carregarDadosIniciais = async () => {
@@ -174,6 +177,7 @@ export function OrcamentoPage() {
     }
 
     try {
+      // DTO para enviar ao backend (SEM id)
       const dto: CalcularQuadroDto = {
         altura: alturaNum,
         largura: larguraNum,
@@ -186,8 +190,9 @@ export function OrcamentoPage() {
 
       const resultadoCalculo = await calcularPrecoQuadro(dto);
 
+      // Cria o quadro com ID (apenas para frontend)
       const novoQuadro: QuadroNoEstado = {
-        id: Math.floor(Math.random() * 1e9), // Gera um id temporário
+        id: Math.floor(Math.random() * 1e9),
         ...dto,
         valorCalculado: resultadoCalculo.total,
       };
@@ -217,6 +222,7 @@ export function OrcamentoPage() {
     setObservacoes("");
     setQuadrosDoPedido([]);
     setFormQuadro(estadoInicialFormQuadro);
+    setValorFinalManual(undefined);
   };
 
   const handleDeleteQuadro = (indexParaRemover: number) => {
@@ -265,7 +271,8 @@ export function OrcamentoPage() {
       telefoneCliente: telefone,
       observacoes: observacoes,
       quadros: quadrosDoPedido,
-      valor_final_calculado: valorTotalPedido,
+      valor_final_calculado: valorFinalManual ?? valorTotalPedido,
+      valor_final_manual: valorFinalManual,
     };
 
     try {
@@ -296,13 +303,9 @@ export function OrcamentoPage() {
 
       handleLimparPedido();
       navigate("/backlog");
-    } catch (err: unknown) {
-      console.error("Erro ao salvar pedido:", err);
-      if (err instanceof Error) {
-        alert(`Erro ao salvar o pedido: ${err.message}`);
-      } else {
-        alert("Erro ao salvar o pedido. Verifique o console.");
-      }
+    } catch {
+      console.error("Erro ao salvar pedido");
+      alert("Erro ao salvar o pedido. Verifique o console.");
     }
   }, [
     atendente,
@@ -311,6 +314,7 @@ export function OrcamentoPage() {
     observacoes,
     quadrosDoPedido,
     valorTotalPedido,
+    valorFinalManual,
     editando,
     pedidoId,
     navigate,
@@ -376,10 +380,12 @@ export function OrcamentoPage() {
           quadros={quadrosDoPedido}
           observacoes={observacoes}
           valorTotalPedido={valorTotalPedido}
+          valorFinalManual={valorFinalManual}
           onObservacoesChange={setObservacoes}
           onLimparPedido={handleLimparPedido}
           onSalvarPedido={handleSalvarPedido}
           onDeleteQuadro={handleDeleteQuadro}
+          onValorFinalManualChange={setValorFinalManual}
         />
       </div>
     </div>

@@ -87,6 +87,7 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
           R$ {valorFinalManual !== undefined ? valorFinalManual.toFixed(2) : valorTotalPedido.toFixed(2)}
         </span>
       </div>
+
       {onValorFinalManualChange && (
         <div className="form-group" style={{ marginTop: 8 }}>
           <label htmlFor="valorFinalManual">Editar Valor Final (opcional)</label>
