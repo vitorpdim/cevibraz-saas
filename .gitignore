@@ -16,3 +16,11 @@ Thumbs.db
 
 storage/
 */storage/
+
+/cevibraz-web/.vite/
+/cevibraz-web/dist/
+/cevibraz-web/node_modules/
+
+.vscode/
+
+.DS_Store
