@@ -2,7 +2,6 @@ import { Type } from 'class-transformer';
 import {
   IsNumber,
   IsArray,
-  ArrayNotEmpty,
   IsBoolean,
   IsOptional,
   IsString,
@@ -20,7 +19,6 @@ export class CalcularQuadroDto {
   largura: number;
 
   @IsArray()
-  @ArrayNotEmpty()
   @IsString({ each: true })
   moldurasSelecionadas: string[];
 
