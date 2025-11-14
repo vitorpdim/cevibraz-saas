@@ -11,9 +11,6 @@ import { Link } from "react-router-dom";
 
 type AbaStatus = "a-fazer" | "ja-feito" | "entregue";
 
-// CORREÇÃO: Removida a função 'getStatusLabel' (não usada)
-
-// Helper para o próximo status (lógica do backlog.js (Source 529))
 const getProximoStatus = (status: AbaStatus) => {
   if (status === "a-fazer") return "Já Feito";
   if (status === "ja-feito") return "Entregue";
@@ -103,7 +100,6 @@ export const BacklogPage: React.FC = () => {
 
   // --- Lógica de Renderização ---
 
-  // CORREÇÃO: Filtramos as 3 listas separadamente
   const { pedidosAFazer, pedidosJaFeito, pedidosEntregue } = useMemo(() => {
     return {
       pedidosAFazer: pedidos.filter((p) => p.status === "A Fazer"),
@@ -112,7 +108,6 @@ export const BacklogPage: React.FC = () => {
     };
   }, [pedidos]);
 
-  // Função helper para renderizar as LINHAS da tabela
   const renderTabelaLinhas = (
     lista: PedidoBacklog[],
     statusAtual: AbaStatus

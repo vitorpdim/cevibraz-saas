@@ -685,3 +685,199 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, var(--color-primary-dark), var(--color-secondary-dark));
 }
+
+/* Pequenas correções de layout e backlog actions */
+
+/* container genérico usado em algumas páginas (Backlog etc.) */
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Garante que botões de ação na tabela do backlog usem o visual primário (verde) em modo claro.
+   Mantemos botão de exclusão com sua cor vermelha. */
+.tab-content .action-cell button:not(.btn-delete) {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+/* garante espaçamento interno na área principal (forms não colados nas bordas) */
+.page-content {
+  padding: 80px 30px 30px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Backlog Page Styles - DARK THEME OVERRIDES for better legibility */
+.tab-container {
+  /* override card bg with dark background for backlog area */
+  background: #07111a; /* deep navy/black */
+  color: #eef6f3; /* light text */
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.45);
+  margin-top: 24px;
+}
+
+/* Tab buttons default (non-active) = dark with white text */
+.tab-buttons .tab-button {
+  background: rgba(255,255,255,0.03);
+  color: #e8f7f0;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Active tab stays green as requested */
+.tab-buttons .tab-button.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: white;
+  border: none;
+}
+
+/* Table overall: transparent background so container shows through,
+   text white for good contrast */
+.tab-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  background: transparent;
+  color: #eef6f3;
+}
+
+/* Header style: lighter background stripe so headers stand out */
+.tab-content th {
+  padding: 12px;
+  text-align: left;
+  color: #f1fbf6;
+  font-weight: 600;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Cells */
+.tab-content td {
+  padding: 12px;
+  color: #e6f4ef;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+/* Rows: dark by default, subtle hover */
+.tab-content tbody tr {
+  background: transparent; /* inherit dark container */
+  transition: background 0.18s ease;
+}
+
+/* Hover state: slightly lighter to improve focus */
+.tab-content tbody tr:hover {
+  background: rgba(255,255,255,0.025);
+}
+
+/* Action buttons: keep them green and readable on dark bg */
+.tab-content .action-cell button:not(.btn-delete),
+.tab-content .action-cell .btn {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* PDF/OS specific small buttons */
+.btn-pdf, .btn-os, .btn-avancar, .btn-success {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+}
+
+/* Delete button remains red and visible on dark bg */
+.btn-delete {
+  background: linear-gradient(135deg, #f56565, #e53e3e);
+  color: white;
+}
+
+/* Ensure pagination/containers inside backlog keep padding */
+.tab-container .tab-content {
+  padding-top: 6px;
+}
+
+/* Small responsive tweak: ensure table cells don't touch container edges */
+.tab-content table th:first-child,
+.tab-content table td:first-child {
+  padding-left: 10px;
+}
+.tab-content table th:last-child,
+.tab-content table td:last-child {
+  padding-right: 10px;
+}
+
+/* Restore Backlog to light theme and ensure tab buttons are green+white in light mode */
+/* These rules are specific and placed at the end so they override the accidental dark block. */
+
+.tab-container {
+  /* restore card background and text color to the theme defaults (light mode) */
+  background: var(--color-card-bg);
+  color: var(--color-text);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px var(--color-shadow);
+  margin-top: 24px;
+}
+
+/* Make all tab buttons legible: green background + white text (matches "A Fazer") */
+.tab-buttons .tab-button {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: transform 0.15s ease;
+}
+
+.tab-buttons .tab-button:not(.active) {
+  opacity: 0.95;
+}
+
+/* Keep a subtle emphasis for the active tab (slightly different shadow) */
+.tab-buttons .tab-button.active {
+  box-shadow: 0 6px 18px rgba(56,161,105,0.12);
+}
+
+/* Restore table text colors to theme defaults (light mode) */
+.tab-content table,
+.tab-content th,
+.tab-content td {
+  color: var(--color-text);
+  background: transparent;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Hover on rows: maintain light-mode subtle highlight */
+.tab-content tbody tr:hover {
+  background: rgba(72, 187, 120, 0.04);
+}
+
+/* Ensure action buttons remain green and visible */
+.tab-content .action-cell button:not(.btn-delete),
+.tab-content .action-cell .btn {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+  border: none;
+}
+
+/* Keep delete button unchanged */
+.tab-content .action-cell .btn-delete {
+  background: linear-gradient(135deg, #f56565, #e53e3e);
+  color: #fff;
+}
+
+/* small spacing safety so table doesn't appear glued to the card edges */
+.tab-container .tab-content {
+  padding-top: 6px;
+}

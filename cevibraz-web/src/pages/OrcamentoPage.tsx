@@ -177,12 +177,20 @@ export function OrcamentoPage() {
     }
 
     try {
-      // DTO para enviar ao backend (SEM id)
+      // --- preparar os dados que o backend espera ---
+      // mapeia as molduras selecionadas (nomes) para códigos (ou devolve o valor original se não encontrar)
+      const moldurasEnvio = formQuadro.moldurasDoQuadro.map((nomeSelecionado) => {
+        const encontrada = moldurasList.find(
+          (m) => m.nome === nomeSelecionado || m.codigo === nomeSelecionado
+        );
+        return encontrada ? encontrada.codigo : nomeSelecionado;
+      });
+
       const dto: CalcularQuadroDto = {
         altura: alturaNum,
         largura: larguraNum,
         medidaFornecidaCliente: formQuadro.medidaCliente,
-        moldurasSelecionadas: formQuadro.moldurasDoQuadro,
+        moldurasSelecionadas: moldurasEnvio, // agora envia códigos/identificadores
         materiaisSelecionados: formQuadro.materiaisDoQuadro,
         espessuraPaspatur: parseFloat(formQuadro.espessuraPaspatur || "0"),
         limpezaSelecionada: formQuadro.materiaisDoQuadro.includes("Limpeza"),
@@ -205,15 +213,22 @@ export function OrcamentoPage() {
           2
         )}`,
       }));
-    } catch (error) {
-      console.error("Erro ao calcular/adicionar quadro:", error);
-      if (error instanceof Error) {
-        alert(`Erro ao calcular o preço: ${error.message}`);
-      } else {
-        alert("Erro ao calcular o preço. Verifique o console.");
+    } catch (error: unknown) {
+      interface AxiosErrorLike {
+        response?: { data?: { message?: string } | string };
+        message?: string;
       }
+      const errObj = error as AxiosErrorLike;
+      const responseData = errObj.response?.data;
+      const serverMsg =
+        (typeof responseData === "object" && (responseData as { message?: string }).message) ||
+        (typeof responseData === "string" && responseData) ||
+        errObj.message ||
+        "Erro desconhecido";
+      console.error("Erro ao calcular/adicionar quadro:", errObj.response ?? errObj);
+      alert(`Erro ao calcular o preço: ${serverMsg}`);
     }
-  }, [formQuadro]);
+  }, [formQuadro, moldurasList]);
 
   const handleLimparPedido = () => {
     setAtendente("");
