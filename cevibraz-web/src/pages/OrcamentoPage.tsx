@@ -178,19 +178,12 @@ export function OrcamentoPage() {
 
     try {
       // --- preparar os dados que o backend espera ---
-      // mapeia as molduras selecionadas (nomes) para códigos (ou devolve o valor original se não encontrar)
-      const moldurasEnvio = formQuadro.moldurasDoQuadro.map((nomeSelecionado) => {
-        const encontrada = moldurasList.find(
-          (m) => m.nome === nomeSelecionado || m.codigo === nomeSelecionado
-        );
-        return encontrada ? encontrada.codigo : nomeSelecionado;
-      });
-
+      // IMPORTANTE: Enviar NOMES das molduras (não códigos) para o cálculo
       const dto: CalcularQuadroDto = {
         altura: alturaNum,
         largura: larguraNum,
         medidaFornecidaCliente: formQuadro.medidaCliente,
-        moldurasSelecionadas: moldurasEnvio, // agora envia códigos/identificadores
+        moldurasSelecionadas: formQuadro.moldurasDoQuadro, // Envia NOMES
         materiaisSelecionados: formQuadro.materiaisDoQuadro,
         espessuraPaspatur: parseFloat(formQuadro.espessuraPaspatur || "0"),
         limpezaSelecionada: formQuadro.materiaisDoQuadro.includes("Limpeza"),
@@ -228,7 +221,7 @@ export function OrcamentoPage() {
       console.error("Erro ao calcular/adicionar quadro:", errObj.response ?? errObj);
       alert(`Erro ao calcular o preço: ${serverMsg}`);
     }
-  }, [formQuadro, moldurasList]);
+  }, [formQuadro]);
 
   const handleLimparPedido = () => {
     setAtendente("");
@@ -280,12 +273,25 @@ export function OrcamentoPage() {
       return;
     }
 
+    // IMPORTANTE: Manter o 'id' e enviar NOMES das molduras
+    const quadrosParaSalvar = quadrosDoPedido.map((q) => ({
+      id: q.id,
+      altura: q.altura,
+      largura: q.largura,
+      moldurasSelecionadas: q.moldurasSelecionadas,
+      materiaisSelecionados: q.materiaisSelecionados,
+      espessuraPaspatur: q.espessuraPaspatur,
+      medidaFornecidaCliente: q.medidaFornecidaCliente,
+      limpezaSelecionada: q.limpezaSelecionada,
+      valorCalculado: q.valorCalculado,
+    }));
+
     const dto = {
       nomeAtendente: atendente,
       nomeCliente: cliente,
       telefoneCliente: telefone,
       observacoes: observacoes,
-      quadros: quadrosDoPedido,
+      quadros: quadrosParaSalvar,
       valor_final_calculado: valorFinalManual ?? valorTotalPedido,
       valor_final_manual: valorFinalManual,
     };
@@ -318,9 +324,20 @@ export function OrcamentoPage() {
 
       handleLimparPedido();
       navigate("/backlog");
-    } catch {
-      console.error("Erro ao salvar pedido");
-      alert("Erro ao salvar o pedido. Verifique o console.");
+    } catch (error: unknown) {
+      interface AxiosErrorLike {
+        response?: { data?: { message?: string } | string };
+        message?: string;
+      }
+      const errObj = error as AxiosErrorLike;
+      const responseData = errObj.response?.data;
+      const serverMsg =
+        (typeof responseData === "object" && (responseData as { message?: string }).message) ||
+        (typeof responseData === "string" && responseData) ||
+        errObj.message ||
+        "Erro desconhecido";
+      console.error("Erro ao salvar pedido:", errObj.response ?? errObj);
+      alert(`Erro ao salvar o pedido: ${serverMsg}`);
     }
   }, [
     atendente,

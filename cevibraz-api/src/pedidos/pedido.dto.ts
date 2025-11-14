@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray } from 'class-validator';
 
 export class QuadroDto {
   altura: number;
@@ -14,11 +14,22 @@ export class QuadroDto {
 
 // DTO p criar um novo pedido
 export class CreatePedidoDto {
+  @IsString()
   nomeAtendente: string;
+
+  @IsString()
   nomeCliente: string;
+
+  @IsString()
   telefoneCliente: string;
+
+  @IsString()
   observacoes: string;
+
+  @IsArray()
   quadros: QuadroDto[];
+
+  @IsNumber()
   valor_final_calculado: number;
 
   @IsOptional()
@@ -28,8 +39,13 @@ export class CreatePedidoDto {
 
 // DTO p atualizar um pedido
 export class UpdatePedidoDto {
+  @IsString()
   observacoes: string;
+
+  @IsArray()
   quadros: QuadroDto[];
+
+  @IsNumber()
   valor_final_calculado: number;
 
   @IsOptional()
