@@ -1,7 +1,6 @@
 import React from "react";
 import { Trash2 } from "lucide-react";
 import type { QuadroNoEstado } from "../types";
-
 interface ResumoPedidoProps {
   quadros: QuadroNoEstado[];
   observacoes: string;
@@ -11,7 +10,10 @@ interface ResumoPedidoProps {
   onLimparPedido: () => void;
   onSalvarPedido: () => void;
   onDeleteQuadro: (index: number) => void;
-  onValorFinalManualChange?: (valor: number) => void;
+  // habilita null p resetar
+  onValorFinalManualChange?: (valor: number | null) => void;
+  isEditing: boolean;
+  isSalvando: boolean;
 }
 
 export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
@@ -25,21 +27,50 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     onSalvarPedido,
     onDeleteQuadro,
     onValorFinalManualChange,
+    isEditing,
+    isSalvando,
   } = props;
 
   const formatarDescricaoQuadro = (quadro: QuadroNoEstado): string => {
-    let desc = `${quadro.altura}cm x ${quadro.largura}cm. `;
-    desc += `Molduras: ${quadro.moldurasSelecionadas.join(", ") || "N/A"}. `;
-    desc += `Materiais: ${quadro.materiaisSelecionados.join(", ") || "N/A"}.`;
-    if (quadro.espessuraPaspatur > 0) {
-      desc += ` Paspatur: ${quadro.espessuraPaspatur}cm.`;
+  let desc = `${quadro.altura}cm x ${quadro.largura}cm. `;
+
+  if (quadro.moldurasSelecionadas.length > 0) {
+    desc += `Molduras: ${quadro.moldurasSelecionadas.join(", ")}. `;
+  }
+
+  if (quadro.materiaisSelecionados.length > 0) {
+    desc += `Materiais: ${quadro.materiaisSelecionados.join(", ")}. `;
+  }
+
+  if (quadro.espessuraPaspatur > 0) {
+    desc += ` Paspatur: ${quadro.espessuraPaspatur}cm.`;
+  }
+  return desc;
+};
+
+  const handleManualValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onValorFinalManualChange) {
+      const valorStr = e.target.value;
+      if (valorStr === "") {
+        onValorFinalManualChange(null);
+        return;
+      }
+      const valorNum = parseFloat(valorStr);
+      if (!isNaN(valorNum)) {
+        onValorFinalManualChange(valorNum);
+      }
     }
-    return desc;
   };
+
+  // valor mostrado no "VALOR TOTAL"
+  const valorFinalExibido = valorFinalManual ?? valorTotalPedido;
+
+  // valor no input se o valorFinalManual for null vai usar o total
+  const valorInput = valorFinalManual ?? valorTotalPedido;
 
   return (
     <section className="card resumo-card">
-      <h3>Resumo do Pedido</h3>
+      <h3>Resumo do pedido</h3>
 
       <div className="quadros-lista">
         {quadros.length === 0 ? (
@@ -47,7 +78,7 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
         ) : (
           <ul className="quadros-list">
             {quadros.map((quadro, index) => (
-              <li key={index} className="quadro-item">
+              <li key={quadro.id} className="quadro-item">
                 <div className="quadro-info">
                   <span className="quadro-desc">
                     {formatarDescricaoQuadro(quadro)}
@@ -83,20 +114,19 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
 
       <div className="total-container">
         <span className="total-label">VALOR TOTAL:</span>
-        <span className="total-value">
-          R$ {valorFinalManual !== undefined ? valorFinalManual.toFixed(2) : valorTotalPedido.toFixed(2)}
-        </span>
+        <span className="total-value">R$ {valorFinalExibido.toFixed(2)}</span>
       </div>
-
       {onValorFinalManualChange && (
         <div className="form-group" style={{ marginTop: 8 }}>
-          <label htmlFor="valorFinalManual">Editar Valor Final (opcional)</label>
+          <label htmlFor="valorFinalManual">
+            Editar valor final (opcional)
+          </label>
           <input
             type="number"
             className="form-control"
             id="valorFinalManual"
-            value={valorFinalManual ?? valorTotalPedido}
-            onChange={(e) => onValorFinalManualChange(Number(e.target.value))}
+            value={valorInput}
+            onChange={handleManualValueChange}
             min={0}
             step={0.01}
           />
@@ -105,10 +135,18 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
 
       <div className="form-actions">
         <button className="btn btn-danger" onClick={onLimparPedido}>
-          Limpar Pedido
+          {isEditing ? "Cancelar Edição" : "Limpar Pedido"}
         </button>
-        <button className="btn btn-success" onClick={onSalvarPedido}>
-          Salvar e Gerar PDF
+        <button
+          className="btn btn-success"
+          onClick={onSalvarPedido}
+          disabled={isSalvando}
+        >
+          {isSalvando
+            ? "Salvando..."
+            : isEditing
+            ? "Atualizar Pedido"
+            : "Salvar e Gerar PDF"}
         </button>
       </div>
     </section>

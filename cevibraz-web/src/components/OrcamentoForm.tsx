@@ -61,16 +61,17 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
     onAdicionarQuadro,
   } = props;
 
-  // Estado local para o texto digitado no autocomplete
+  // estado p texto digitado no autocomplete
   const [molduraInput, setMolduraInput] = useState("");
+  const [isMolduraInputFocused, setIsMolduraInputFocused] = useState(false);
 
-  // Atualiza o input e o valor selecionado
+  // atlz input e  valor selecionado
   const handleMolduraInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMolduraInput(e.target.value);
     onMolduraSelecionadaChange(e.target.value);
   };
 
-  // Filtra as molduras conforme o texto digitado
+  // filtrar molduras conforme o texto digitado
   const moldurasFiltradas = useMemo(() => {
     const texto = molduraInput.trim().toLowerCase();
     if (!texto) return moldurasList;
@@ -81,7 +82,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
     );
   }, [molduraInput, moldurasList]);
 
-  // Quando seleciona uma moldura da lista
+  // qnd seleciona uma moldura da lista
   const handleSelectMoldura = (nome: string) => {
     setMolduraInput(nome);
     onMolduraSelecionadaChange(nome);
@@ -90,7 +91,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
   return (
     <div className="form-section-wrapper">
       <section className="card">
-        <h3>Informações do Atendimento</h3>
+        <h3>Informações do atendimento</h3>
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="atendente">Atendente</label>
@@ -129,7 +130,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
       </section>
 
       <section className="card">
-        <h3>Quadro - Dimensões e Materiais</h3>
+        <h3>Quadro - Dimensões e materiais</h3>
 
         <div className="form-row">
           <div className="form-group">
@@ -179,11 +180,18 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
               placeholder="Digite para buscar moldura..."
               value={molduraInput}
               onChange={handleMolduraInputChange}
+              onFocus={() => setIsMolduraInputFocused(true)}
+              onBlur={() => {
+                setTimeout(() => setIsMolduraInputFocused(false), 200);
+              }}
               autoComplete="off"
             />
             <button
               className="btn btn-primary"
-              onClick={onAddMoldura}
+              onClick={() => {
+                onAddMoldura();
+                setMolduraInput("");
+              }}
               type="button"
             >
               Adicionar
@@ -195,43 +203,45 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
             >
               Remover
             </button>
-            {/* Lista de sugestões */}
-            {molduraInput && moldurasFiltradas.length > 0 && (
-              <ul
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  zIndex: 10,
-                  background: "#fff",
-                  border: "1px solid #eee",
-                  borderRadius: "0 0 8px 8px",
-                  maxHeight: 180,
-                  overflowY: "auto",
-                  margin: 0,
-                  padding: 0,
-                  listStyle: "none",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-                }}
-              >
-                {moldurasFiltradas.map((moldura) => (
-                  <li
-                    key={moldura.id}
-                    style={{
-                      padding: "8px 16px",
-                      cursor: "pointer",
-                      borderBottom: "1px solid #f0f0f0",
-                      background:
-                        moldura.nome === molduraSelecionada ? "#f0f8e8" : "#fff",
-                    }}
-                    onClick={() => handleSelectMoldura(moldura.nome)}
-                  >
-                    {moldura.nome} (Cod: {moldura.codigo})
-                  </li>
-                ))}
-              </ul>
-            )}
+            {(isMolduraInputFocused || molduraInput) &&
+              moldurasFiltradas.length > 0 && (
+                <ul
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    zIndex: 10,
+                    background: "#fff",
+                    border: "1px solid #eee",
+                    borderRadius: "0 0 8px 8px",
+                    maxHeight: 180,
+                    overflowY: "auto",
+                    margin: 0,
+                    padding: 0,
+                    listStyle: "none",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  {moldurasFiltradas.map((moldura) => (
+                    <li
+                      key={moldura.id}
+                      style={{
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        borderBottom: "1px solid #f0f0f0",
+                        background:
+                          moldura.nome === molduraSelecionada
+                            ? "#f0f8e8"
+                            : "#fff",
+                      }}
+                      onClick={() => handleSelectMoldura(moldura.nome)}
+                    >
+                      {moldura.nome} (Cod: {moldura.codigo})
+                    </li>
+                  ))}
+                </ul>
+              )}
           </div>
         </div>
 
@@ -280,7 +290,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="resumoQuadro">Resumo do Quadro</label>
+          <label htmlFor="resumoQuadro">Resumo do quadro</label>
           <textarea
             className="form-control"
             id="resumoQuadro"
