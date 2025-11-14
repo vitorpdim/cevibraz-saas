@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { IsNumber, IsOptional } from 'class-validator';
+
 export class QuadroDto {
   altura: number;
   largura: number;
@@ -42,10 +43,18 @@ export class UpdateStatusDto {
 }
 
 // DTO p os dados que o gerador de pdf espera
-export interface QuadroParaPdf extends QuadroDto {
+export interface QuadroParaPdf {
   id: number;
+  altura: number;
+  largura: number;
   altura_cm: number;
   largura_cm: number;
+  moldurasSelecionadas?: string[];
+  materiaisSelecionados?: string[];
+  espessuraPaspatur: number;
+  medidaFornecidaCliente: boolean;
+  limpezaSelecionada: boolean;
+  valorCalculado: number;
   molduras: { nome: string; codigo: string }[];
   materiais: { nome: string; espessura_paspatur_cm: number | undefined }[];
   detalhesCalculo: { total: number; detalhes: string[] };
