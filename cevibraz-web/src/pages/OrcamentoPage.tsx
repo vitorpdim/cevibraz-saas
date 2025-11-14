@@ -13,7 +13,7 @@ import type {
   Material,
   QuadroNoEstado,
   CalcularQuadroDto,
-  PedidoApiDto, // <<< CORREÇÃO 1: Importado de '../types'
+  PedidoApiDto,
 } from "../types";
 
 import { OrcamentoForm } from "../components/OrcamentoForm";
@@ -33,7 +33,6 @@ const estadoInicialFormQuadro = {
 };
 
 export function OrcamentoPage() {
-  // --- Seus Estados (Mantidos) ---
   const [moldurasList, setMoldurasList] = useState<Moldura[]>([]);
   const [materiaisList, setMateriaisList] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,21 +42,19 @@ export function OrcamentoPage() {
   const [telefone, setTelefone] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [quadrosDoPedido, setQuadrosDoPedido] = useState<QuadroNoEstado[]>([]);
-  const [valorTotalPedido, setValorTotalPedido] = useState(0); // Mantido em 0 (corrige bug 'toFixed')
+  const [valorTotalPedido, setValorTotalPedido] = useState(0);
   const [formQuadro, setFormQuadro] = useState(estadoInicialFormQuadro);
   const { pedidoId } = useParams<{ pedidoId?: string }>();
   const navigate = useNavigate();
 
-  // --- CORREÇÃO 2: Estados de Controle Aprimorados ---
-  const [valorFinalManual, setValorFinalManual] = useState<number | null>(null); // Usando null
-  const [isEditing, setIsEditing] = useState(false); // Renomeado de 'editando'
-  const [isSalvando, setIsSalvando] = useState(false); // Novo estado de loading
+  const [valorFinalManual, setValorFinalManual] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSalvando, setIsSalvando] = useState(false);
 
-  // --- Seu useEffect de Carregar Dados (Mantido) ---
   useEffect(() => {
     const carregarDadosIniciais = async () => {
       try {
-        setIsLoading(true); // Mantido
+        setIsLoading(true);
         setError(null);
         const [moldurasData, materiaisData] = await Promise.all([
           fetchMolduras(),
@@ -69,14 +66,12 @@ export function OrcamentoPage() {
         console.error("Erro ao buscar dados iniciais:", err);
         setError("Falha ao carregar dados da API. Verifique o backend.");
       } finally {
-        // ATENÇÃO: O setIsLoading(false) foi movido para o useEffect[pedidoId]
-        // para garantir que ambos os carregamentos terminem.
-      }
+        //fodase
+        }
     };
     carregarDadosIniciais();
   }, []);
 
-  // --- Seu useEffect de Calcular Total (Mantido) ---
   useEffect(() => {
     const total = quadrosDoPedido.reduce(
       (acc, quadro) => acc + quadro.valorCalculado,
@@ -85,7 +80,6 @@ export function OrcamentoPage() {
     setValorTotalPedido(total);
   }, [quadrosDoPedido]);
 
-  // --- Seu useEffect de Resumo do Quadro (Mantido) ---
   useEffect(() => {
     const {
       altura,
@@ -129,10 +123,9 @@ export function OrcamentoPage() {
     formQuadro.materiaisDoQuadro,
     formQuadro.espessuraPaspatur,
     formQuadro.isPaspaturVisivel,
-    formQuadro, // Dependência completa (como estava no seu código)
+    formQuadro,
   ]);
 
-  // --- Suas Funções de Formulário (Mantidas) ---
   const handleAddMoldura = () => {
     if (
       formQuadro.molduraSelecionada &&
@@ -177,7 +170,6 @@ export function OrcamentoPage() {
     setFormQuadro(estadoInicialFormQuadro);
   };
 
-  // --- Sua Função de Adicionar Quadro (Mantida) ---
   const handleAdicionarQuadro = useCallback(async () => {
     const alturaNum = parseFloat(formQuadro.altura);
     const larguraNum = parseFloat(formQuadro.largura);
@@ -219,7 +211,6 @@ export function OrcamentoPage() {
         )}`,
       }));
     } catch (error: unknown) {
-      // ... (Seu tratamento de erro mantido) ...
       interface AxiosErrorLike {
         response?: { data?: { message?: string } | string };
         message?: string;
@@ -240,14 +231,12 @@ export function OrcamentoPage() {
     }
   }, [formQuadro]);
 
-  // --- Sua Função de Deletar Quadro (Mantida) ---
   const handleDeleteQuadro = (indexParaRemover: number) => {
     setQuadrosDoPedido((quadrosAtuais) =>
       quadrosAtuais.filter((_, index) => index !== indexParaRemover)
     );
   };
 
-  // --- CORREÇÃO 3: Lógica de Carregamento de Edição (Robusta) ---
   useEffect(() => {
     const carregarPedidoParaEdicao = async (id: string) => {
       try {
@@ -261,41 +250,36 @@ export function OrcamentoPage() {
         setObservacoes(pedido.observacoes);
         setQuadrosDoPedido(pedido.quadros);
 
-        // Lógica correta para definir o valor total e o manual
         const valorCalculado = pedido.quadros.reduce(
           (acc, q) => acc + q.valorCalculado,
           0
         );
-        setValorTotalPedido(valorCalculado); // Define o total calculado
+        setValorTotalPedido(valorCalculado);
 
-        // Se o valor salvo for DIFERENTE do calculado, ele foi manual
         if (pedido.valor_final_salvo !== valorCalculado) {
           setValorFinalManual(pedido.valor_final_salvo);
         } else {
-          setValorFinalManual(null); // Garante que é nulo
+          setValorFinalManual(null);
         }
 
-        setIsEditing(true); // Ativa o modo de edição
+        setIsEditing(true);
       } catch (err) {
         console.error("Erro ao carregar pedido:", err);
         setError("Pedido não encontrado. Voltando para um novo orçamento.");
         navigate("/orcamento");
       } finally {
-        setIsLoading(false); // Termina o carregamento GERAL
+        setIsLoading(false);
       }
     };
 
-    // Lógica 'if/else' para limpar o form se não houver pedidoId
     if (pedidoId) {
       carregarPedidoParaEdicao(pedidoId);
     } else {
-      handleLimparPedido(false); // false = não navegar
+      handleLimparPedido(false);
       setIsEditing(false);
-      setIsLoading(false); // Termina o carregamento GERAL
+      setIsLoading(false);
     }
-  }, [pedidoId, navigate]); // Dependências mantidas
-
-  // --- CORREÇÃO 4: Funções de Salvar/Limpar Atualizadas ---
+  }, [pedidoId, navigate]);
 
   const handleLimparPedido = (navegar = true) => {
     setAtendente("");
@@ -304,10 +288,9 @@ export function OrcamentoPage() {
     setObservacoes("");
     setQuadrosDoPedido([]);
     setFormQuadro(estadoInicialFormQuadro);
-    setValorFinalManual(null); // Usando null
+    setValorFinalManual(null);
     setError(null);
 
-    // Lógica de Edição
     setIsEditing(false);
     if (navegar && pedidoId) {
       navigate("/orcamento");
@@ -324,32 +307,28 @@ export function OrcamentoPage() {
       return;
     }
 
-    setIsSalvando(true); // Ativa o loading do botão
+    setIsSalvando(true);
 
-    // O DTO que o backend espera (definido em types.ts)
     const dto: PedidoApiDto = {
       nomeAtendente: atendente,
       nomeCliente: cliente,
       telefoneCliente: telefone,
       observacoes: observacoes,
-      quadros: quadrosDoPedido, // Já está no formato correto (QuadroNoEstado)
-      valor_final_calculado: valorTotalPedido, // O total calculado REAL
-      valor_final_manual: valorFinalManual ?? undefined, // Envia o manual se não for null
+      quadros: quadrosDoPedido,
+      valor_final_calculado: valorTotalPedido,
+      valor_final_manual: valorFinalManual ?? undefined,
     };
 
     try {
       let resposta;
       if (isEditing && pedidoId) {
-        // --- MODO DE ATUALIZAÇÃO (PUT) ---
         resposta = await updatePedido(Number(pedidoId), dto);
         alert(`Pedido atualizado com sucesso!`);
-        navigate("/backlog"); // Navega para o backlog
+        navigate("/backlog");
       } else {
-        // --- MODO DE CRIAÇÃO (POST) ---
         resposta = await salvarPedido(dto);
         alert(`Pedido ${resposta.numeroPedido} salvo com sucesso!`);
 
-        // Sua lógica de Download (Mantida)
         if (resposta.pdf_pedido_url) {
           const filename = `pedido_${resposta.numeroPedido}.pdf`;
           try {
@@ -365,10 +344,9 @@ export function OrcamentoPage() {
             alert("Erro ao baixar o PDF. Verifique o console.");
           }
         }
-        handleLimparPedido(false); // Limpa o form sem navegar
+        handleLimparPedido(false);
       }
     } catch (error: unknown) {
-      // ... (Seu tratamento de erro mantido) ...
       interface AxiosErrorLike {
         response?: { data?: { message?: string } | string };
         message?: string;
@@ -384,7 +362,7 @@ export function OrcamentoPage() {
       console.error("Erro ao salvar pedido:", errObj.response ?? errObj);
       alert(`Erro ao salvar o pedido: ${serverMsg}`);
     } finally {
-      setIsSalvando(false); // Desativa o loading do botão
+      setIsSalvando(false);
     }
   }, [
     atendente,
@@ -394,12 +372,11 @@ export function OrcamentoPage() {
     quadrosDoPedido,
     valorTotalPedido,
     valorFinalManual,
-    isEditing, // Renomeado de 'editando'
+    isEditing,
     pedidoId,
     navigate,
   ]);
 
-  // --- Sua Renderização (Mantida) ---
   if (isLoading) {
     return (
       <div className="container-principal text-center mt-5">
@@ -455,19 +432,18 @@ export function OrcamentoPage() {
           onAdicionarQuadro={handleAdicionarQuadro}
         />
 
-        {/* --- CORREÇÃO 5: Props Atualizadas no ResumoPedido --- */}
         <ResumoPedido
           quadros={quadrosDoPedido}
           observacoes={observacoes}
           valorTotalPedido={valorTotalPedido}
-          valorFinalManual={valorFinalManual ?? undefined} // Envia undefined se for null
+          valorFinalManual={valorFinalManual ?? undefined}
           onObservacoesChange={setObservacoes}
           onLimparPedido={handleLimparPedido}
           onSalvarPedido={handleSalvarPedido}
           onDeleteQuadro={handleDeleteQuadro}
-          onValorFinalManualChange={setValorFinalManual} // Passando o 'setter'
-          isEditing={isEditing} // Prop de Edição
-          isSalvando={isSalvando} // Prop de Loading
+          onValorFinalManualChange={setValorFinalManual}
+          isEditing={isEditing}
+          isSalvando={isSalvando}
         />
       </div>
     </div>

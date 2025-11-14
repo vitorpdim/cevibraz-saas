@@ -28,7 +28,6 @@ export interface CalculoResponse {
   detalhes: string[];
 }
 
-// Para uso no estado do frontend e edição
 export interface QuadroNoEstado {
   id: number;
   altura: number;
@@ -41,7 +40,7 @@ export interface QuadroNoEstado {
   valorCalculado: number;
 }
 
-// Para criar/atualizar pedido (envio para API)
+// p criar/atualizar pedido envia p api
 export interface PedidoApiDto {
   nomeAtendente: string;
   nomeCliente: string;
@@ -52,7 +51,7 @@ export interface PedidoApiDto {
   valor_final_manual?: number;
 }
 
-// Resposta ao salvar pedido
+// resposta em salvar pedido
 export interface SalvarPedidoResponse {
   message: string;
   pedidoId: number;
@@ -62,7 +61,7 @@ export interface SalvarPedidoResponse {
   pdf_os_url?: string;
 }
 
-// Pedido para exibir no backlog
+// pedido p exibir no backlog
 export interface PedidoBacklog {
   id: number;
   numero_pedido: string;
@@ -77,7 +76,7 @@ export interface PedidoBacklog {
   pdf_os_url: string | null;
 }
 
-// Para edição (carregar na tela de orçamento)
+// p edição carregar na tela de orçamento
 export interface PedidoParaEdicao {
   atendente: string;
   clienteNome: string;

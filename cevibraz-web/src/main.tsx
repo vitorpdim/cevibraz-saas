@@ -19,7 +19,7 @@ const router = createBrowserRouter([
         element: <OrcamentoPage />,
       },
       {
-        path: "orcamento/:pedidoId", // <-- nova rota dinâmica
+        path: "orcamento/:pedidoId",
         element: <OrcamentoPage />,
       },
       {

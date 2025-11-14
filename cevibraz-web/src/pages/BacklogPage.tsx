@@ -1,4 +1,3 @@
-// Em: cevibraz-web/src/pages/BacklogPage.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import type { PedidoBacklog } from "../types";
 import {
@@ -22,8 +21,6 @@ export const BacklogPage: React.FC = () => {
   const [pedidos, setPedidos] = useState<PedidoBacklog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [abaAtiva, setAbaAtiva] = useState<AbaStatus>("a-fazer");
-
-  // --- Funções de Carregamento de Dados ---
   const carregarPedidos = async () => {
     try {
       setIsLoading(true);
@@ -41,8 +38,6 @@ export const BacklogPage: React.FC = () => {
   useEffect(() => {
     carregarPedidos();
   }, []);
-
-  // --- Handlers de Ação ---
 
   const handleMudarStatus = async (id: number, statusAtual: AbaStatus) => {
     const proximoStatus = getProximoStatus(statusAtual);
@@ -98,7 +93,7 @@ export const BacklogPage: React.FC = () => {
     }
   };
 
-  // --- Lógica de Renderização ---
+  // --- renderiza ---
 
   const { pedidosAFazer, pedidosJaFeito, pedidosEntregue } = useMemo(() => {
     return {
@@ -189,7 +184,6 @@ export const BacklogPage: React.FC = () => {
     ));
   };
 
-  // CORREÇÃO: JSX agora espelha o backlog.html (Source 527)
   return (
     <div className="container">
       <h1>Backlog de Pedidos</h1>
@@ -216,7 +210,6 @@ export const BacklogPage: React.FC = () => {
           </button>
         </div>
 
-        {/* CORREÇÃO: Renderiza as 3 tabelas e usa CSS para mostrar/ocultar */}
         <div className="tab-content">
           <div
             id="a-fazer"
