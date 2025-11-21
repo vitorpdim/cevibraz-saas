@@ -89,3 +89,26 @@ export interface PedidoParaEdicao {
 export interface SimpleApiResponse {
   message: string;
 }
+
+
+export interface PedidoParaEdicao {
+  id: number;
+  atendente: string;
+  clienteNome: string;
+  clienteTelefone: string;
+  observacoes: string;
+  quadros: QuadroNoEstado[];
+  valor_final_salvo: number;
+}
+
+export interface CreateMolduraDto {
+  codigo: string;
+  nome: string;
+  valor_metro_linear: number;
+}
+
+export interface UpdateMolduraDto {
+  codigo?: string;
+  nome?: string;
+  valor_metro_linear?: number;
+}

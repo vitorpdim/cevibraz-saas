@@ -4,7 +4,7 @@ import type {
     Material,
     CalcularQuadroDto,
     CalculoResponse,
-    PedidoApiDto, // Corrigido aqui
+    PedidoApiDto,
     PedidoBacklog,
     SimpleApiResponse,
     SalvarPedidoResponse,
@@ -79,4 +79,29 @@ export const updatePedido = async (id: number, dto: PedidoApiDto): Promise<Salva
   return response.data;
 };
 
+export const createMoldura = async (formData: FormData): Promise<Moldura> => {
+  const response = await apiClient.post('/api/molduras', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const updateMoldura = async (id: number, formData: FormData): Promise<Moldura> => {
+  const response = await apiClient.put(`/api/molduras/${id}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const deleteMoldura = async (id: number): Promise<SimpleApiResponse> => {
+  const response = await apiClient.delete(`/api/molduras/${id}`);
+  return response.data;
+};
+
+
 export default apiClient;
+
