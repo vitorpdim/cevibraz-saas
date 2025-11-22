@@ -1,5 +1,10 @@
 import React, { useState, useMemo } from "react";
+import { Plus, Image as ImageIcon, Edit } from "lucide-react";
 import type { Moldura, Material } from "../types";
+import { MolduraSelectorModal } from "./MolduraSelectorModal";
+
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://cevibraz-api.onrender.com";
 
 interface OrcamentoFormProps {
   moldurasList: Moldura[];
@@ -10,7 +15,7 @@ interface OrcamentoFormProps {
   altura: string;
   largura: string;
   medidaCliente: boolean;
-  molduraSelecionada: string;
+  molduraSelecionada: string; // Nome da moldura selecionada
   materiaisDoQuadro: string[];
   espessuraPaspatur: string;
   isPaspaturVisivel: boolean;
@@ -42,7 +47,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
     largura,
     medidaCliente,
     molduraSelecionada,
-    materiaisDoQuadro,
+    materiaisDoQuadro, // Lista de molduras já adicionadas ao quadro (array de strings)
     espessuraPaspatur,
     isPaspaturVisivel,
     resumoDoQuadro,
@@ -54,45 +59,25 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
     onMedidaClienteChange,
     onMolduraSelecionadaChange,
     onAddMoldura,
-    onRemoveUltimaMoldura,
     onMaterialChange,
     onEspessuraPaspaturChange,
     onLimparCampos,
     onAdicionarQuadro,
   } = props;
 
-  // estado p texto digitado no autocomplete
-  const [molduraInput, setMolduraInput] = useState("");
-  const [isMolduraInputFocused, setIsMolduraInputFocused] = useState(false);
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
-  // atlz input e  valor selecionado
-  const handleMolduraInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMolduraInput(e.target.value);
-    onMolduraSelecionadaChange(e.target.value);
-  };
-
-  // filtrar molduras conforme o texto digitado
-  const moldurasFiltradas = useMemo(() => {
-    const texto = molduraInput.trim().toLowerCase();
-    if (!texto) return moldurasList;
-    return moldurasList.filter(
-      (m) =>
-        m.nome.toLowerCase().includes(texto) ||
-        m.codigo.toLowerCase().includes(texto)
-    );
-  }, [molduraInput, moldurasList]);
-
-  // qnd seleciona uma moldura da lista
-  const handleSelectMoldura = (nome: string) => {
-    setMolduraInput(nome);
-    onMolduraSelecionadaChange(nome);
-  };
+  // Encontra o objeto completo da moldura selecionada (pelo nome) para mostrar preview
+  const molduraObj = useMemo(() => {
+    return moldurasList.find((m) => m.nome === molduraSelecionada);
+  }, [molduraSelecionada, moldurasList]);
 
   return (
     <div className="form-section-wrapper">
-      <section className="card">
-        <h3>Informações do atendimento</h3>
-        <div className="form-row">
+      {/* Seção 1: Cliente */}
+      <section className="card form-card">
+        <h3>Informações do Atendimento</h3>
+        <div className="form-grid-3">
           <div className="form-group">
             <label htmlFor="atendente">Atendente</label>
             <input
@@ -101,7 +86,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
               id="atendente"
               value={atendente}
               onChange={(e) => onAtendenteChange(e.target.value)}
-              placeholder="Nome do atendente"
+              placeholder="Nome"
             />
           </div>
           <div className="form-group">
@@ -112,7 +97,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
               id="cliente"
               value={cliente}
               onChange={(e) => onClienteChange(e.target.value)}
-              placeholder="Nome do cliente"
+              placeholder="Nome"
             />
           </div>
           <div className="form-group">
@@ -121,18 +106,19 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
               type="text"
               className="form-control"
               id="telefone"
-              placeholder="(XX) XXXXX-XXXX"
               value={telefone}
               onChange={(e) => onTelefoneChange(e.target.value)}
+              placeholder="(XX) XXXXX-XXXX"
             />
           </div>
         </div>
       </section>
 
-      <section className="card">
-        <h3>Quadro - Dimensões e materiais</h3>
+      {/* Seção 2: Quadro */}
+      <section className="card form-card" style={{ marginTop: "1.5rem" }}>
+        <h3>Composição do Quadro</h3>
 
-        <div className="form-row">
+        <div className="form-grid-2">
           <div className="form-group">
             <label htmlFor="altura">Altura (cm)</label>
             <input
@@ -157,158 +143,256 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
           </div>
         </div>
 
-        <div className="form-check-group">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            id="medida-cliente"
-            checked={medidaCliente}
-            onChange={(e) => onMedidaClienteChange(e.target.checked)}
-          />
-          <label className="form-check-label" htmlFor="medida-cliente">
-            Medida fornecida pelo cliente
+        <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={medidaCliente}
+              onChange={(e) => onMedidaClienteChange(e.target.checked)}
+            />
+            <span> Medida exata fornecida pelo cliente</span>
           </label>
         </div>
 
+        {/* NOVA SELEÇÃO DE MOLDURA */}
         <div className="form-group">
-          <label htmlFor="molduraSelect">Moldura</label>
-          <div className="input-group" style={{ position: "relative" }}>
-            <input
-              type="text"
-              className="form-control"
-              id="molduraSelect"
-              placeholder="Digite para buscar moldura..."
-              value={molduraInput}
-              onChange={handleMolduraInputChange}
-              onFocus={() => setIsMolduraInputFocused(true)}
-              onBlur={() => {
-                setTimeout(() => setIsMolduraInputFocused(false), 200);
-              }}
-              autoComplete="off"
-            />
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                onAddMoldura();
-                setMolduraInput("");
-              }}
-              type="button"
-            >
-              Adicionar
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={onRemoveUltimaMoldura}
-              type="button"
-            >
-              Remover
-            </button>
-            {(isMolduraInputFocused || molduraInput) &&
-              moldurasFiltradas.length > 0 && (
-                <ul
+          <label>Moldura Selecionada</label>
+
+          {/* Box de Seleção Visual */}
+          <div
+            style={{
+              border: "2px dashed var(--color-border)",
+              borderRadius: "12px",
+              padding: "1rem",
+              backgroundColor: "var(--color-bg-light)",
+              marginBottom: "1rem",
+            }}
+          >
+            {molduraObj ? (
+              <div
+                style={{ display: "flex", gap: "1rem", alignItems: "center" }}
+              >
+                {/* Mini Preview */}
+                <div
                   style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    zIndex: 10,
-                    background: "#fff",
-                    border: "1px solid #eee",
-                    borderRadius: "0 0 8px 8px",
-                    maxHeight: 180,
-                    overflowY: "auto",
-                    margin: 0,
-                    padding: 0,
-                    listStyle: "none",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    backgroundColor: "var(--color-card-bg)",
+                    border: "1px solid var(--color-border)",
                   }}
                 >
-                  {moldurasFiltradas.map((moldura) => (
-                    <li
-                      key={moldura.id}
+                  {molduraObj.imagem_url ? (
+                    <img
+                      src={`${API_URL}${molduraObj.imagem_url}`}
                       style={{
-                        padding: "8px 16px",
-                        cursor: "pointer",
-                        borderBottom: "1px solid #f0f0f0",
-                        background:
-                          moldura.nome === molduraSelecionada
-                            ? "#f0f8e8"
-                            : "#fff",
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
                       }}
-                      onClick={() => handleSelectMoldura(moldura.nome)}
+                      alt=""
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "var(--color-text)",
+                        opacity: 0.5,
+                      }}
                     >
-                      {moldura.nome} (Cod: {moldura.codigo})
-                    </li>
-                  ))}
-                </ul>
-              )}
+                      <ImageIcon size={24} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Informações */}
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{ fontWeight: "bold", color: "var(--color-text)" }}
+                  >
+                    {molduraObj.nome}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.9rem",
+                      color: "var(--color-text)",
+                      opacity: 0.7,
+                    }}
+                  >
+                    {molduraObj.codigo}
+                  </div>
+                  <div
+                    style={{
+                      color: "var(--color-primary)",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    R${" "}
+                    {parseFloat(
+                      molduraObj.valor_metro_linear.toString()
+                    ).toFixed(2)}
+                    /m
+                  </div>
+                </div>
+
+                {/* Botões de Ação */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <button
+                    className="btn btn-secondary"
+                    style={{ padding: "6px 12px", fontSize: "0.9rem" }}
+                    onClick={() => setIsSelectorOpen(true)}
+                    title="Trocar"
+                  >
+                    <Edit size={16} /> Trocar
+                  </button>
+                  <button
+                    className="btn btn-success"
+                    style={{ padding: "6px 12px", fontSize: "0.9rem" }}
+                    onClick={onAddMoldura}
+                  >
+                    <Plus size={16} /> Adicionar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "1.5rem" }}>
+                <p
+                  style={{
+                    color: "var(--color-text)",
+                    opacity: 0.6,
+                    marginBottom: "1rem",
+                  }}
+                >
+                  Nenhuma moldura selecionada
+                </p>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setIsSelectorOpen(true)}
+                >
+                  <ImageIcon size={18} /> Abrir Catálogo de Molduras
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Materiais (Checkboxes) */}
         <div className="form-group">
-          <label>Materiais</label>
-          <div className="materials-grid">
+          <label>Materiais e Acabamentos</label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+              gap: "0.5rem",
+              marginTop: "0.5rem",
+            }}
+          >
             {materiaisList.map((material) => (
-              <div className="form-check-group" key={material.id}>
+              <label
+                key={material.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  backgroundColor: materiaisDoQuadro.includes(material.nome)
+                    ? "rgba(72, 187, 120, 0.1)"
+                    : "transparent",
+                  borderColor: materiaisDoQuadro.includes(material.nome)
+                    ? "var(--color-primary)"
+                    : "var(--color-border)",
+                  transition: "all 0.2s",
+                }}
+              >
                 <input
-                  className="form-check-input"
                   type="checkbox"
-                  value={material.nome}
-                  id={`material-${material.id}`}
                   checked={materiaisDoQuadro.includes(material.nome)}
                   onChange={(e) =>
-                    onMaterialChange(e.target.value, e.target.checked)
+                    onMaterialChange(material.nome, e.target.checked)
                   }
                 />
-                <label
-                  className="form-check-label"
-                  htmlFor={`material-${material.id}`}
+                <span
+                  style={{ fontSize: "0.81rem", color: "var(--color-text)" }}
                 >
                   {material.nome}
-                </label>
-              </div>
+                </span>
+              </label>
             ))}
           </div>
-
-          {isPaspaturVisivel && (
-            <div className="form-group paspatur-input">
-              <label htmlFor="paspaturEspessura">
-                Espessura do Paspatur (cm)
-              </label>
-              <input
-                type="number"
-                className="form-control"
-                id="paspaturEspessura"
-                step="0.5"
-                min="0"
-                value={espessuraPaspatur}
-                onChange={(e) => onEspessuraPaspaturChange(e.target.value)}
-                placeholder="0"
-              />
-            </div>
-          )}
         </div>
 
-        <div className="form-group">
-          <label htmlFor="resumoQuadro">Resumo do quadro</label>
+        {isPaspaturVisivel && (
+          <div className="form-group" style={{ marginTop: "1rem" }}>
+            <label htmlFor="paspatur">Espessura do Paspatur (cm)</label>
+            <input
+              type="number"
+              className="form-control"
+              id="paspatur"
+              value={espessuraPaspatur}
+              onChange={(e) => onEspessuraPaspaturChange(e.target.value)}
+              step="0.5"
+              min="0"
+            />
+          </div>
+        )}
+
+        {/* Resumo e Ações Finais */}
+        <div className="form-group" style={{ marginTop: "1.5rem" }}>
+          <label>Resumo do Cálculo</label>
           <textarea
             className="form-control"
-            id="resumoQuadro"
-            rows={4}
             readOnly
+            rows={3}
             value={resumoDoQuadro}
-          ></textarea>
+            style={{
+              fontFamily: "monospace",
+              backgroundColor: "var(--color-bg-light)",
+              color: "var(--color-text)",
+            }}
+          />
         </div>
 
-        <div className="form-actions">
-          <button className="btn btn-secondary" onClick={onLimparCampos}>
-            Limpar Campos
+        <div
+          className="form-actions"
+          style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}
+        >
+          <button
+            className="btn btn-secondary"
+            onClick={onLimparCampos}
+            style={{ flex: 1 }}
+          >
+            Limpar
           </button>
-          <button className="btn btn-success" onClick={onAdicionarQuadro}>
-            Adicionar Quadro
+          <button
+            className="btn btn-success"
+            onClick={onAdicionarQuadro}
+            style={{ flex: 1 }}
+          >
+            <Plus size={20} /> Adicionar ao Pedido
           </button>
         </div>
       </section>
+
+      {/* Modal de Seleção Integrado */}
+      <MolduraSelectorModal
+        isOpen={isSelectorOpen}
+        onClose={() => setIsSelectorOpen(false)}
+        onSelect={(m) => onMolduraSelecionadaChange(m.nome)}
+      />
     </div>
   );
 };
