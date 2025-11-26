@@ -26,6 +26,10 @@ export class CreatePedidoDto {
   @IsString()
   observacoes: string;
 
+  @IsOptional()
+  @IsString()
+  condicao_pagamento: string;
+
   @IsArray()
   quadros: QuadroDto[];
 
@@ -41,6 +45,10 @@ export class CreatePedidoDto {
 export class UpdatePedidoDto {
   @IsString()
   observacoes: string;
+
+  @IsOptional()
+  @IsString()
+  condicao_pagamento: string;
 
   @IsArray()
   quadros: QuadroDto[];

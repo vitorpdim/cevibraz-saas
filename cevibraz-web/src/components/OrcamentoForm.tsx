@@ -34,6 +34,8 @@ interface OrcamentoFormProps {
   onEspessuraPaspaturChange: (value: string) => void;
   onLimparCampos: () => void;
   onAdicionarQuadro: () => void;
+  condicaoPagamento: string;
+  onCondicaoPagamentoChange: (val: string) => void;
 }
 
 export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
@@ -47,7 +49,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
     largura,
     medidaCliente,
     molduraSelecionada,
-    materiaisDoQuadro, // Lista de molduras já adicionadas ao quadro (array de strings)
+    materiaisDoQuadro,
     espessuraPaspatur,
     isPaspaturVisivel,
     resumoDoQuadro,
@@ -66,15 +68,12 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
   } = props;
 
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-
-  // Encontra o objeto completo da moldura selecionada (pelo nome) para mostrar preview
   const molduraObj = useMemo(() => {
     return moldurasList.find((m) => m.nome === molduraSelecionada);
   }, [molduraSelecionada, moldurasList]);
 
   return (
     <div className="form-section-wrapper">
-      {/* Seção 1: Cliente */}
       <section className="card form-card">
         <h3>Informações do Atendimento</h3>
         <div className="form-grid-3">
@@ -111,6 +110,17 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
               placeholder="(XX) XXXXX-XXXX"
             />
           </div>
+          <div className="form-group" style={{ marginTop: '1rem' }}>
+           <label htmlFor="pagamento">Condição de Pagamento</label>
+           <input
+             type="text"
+             className="form-control"
+             id="pagamento"
+             value={props.condicaoPagamento}
+             onChange={(e) => props.onCondicaoPagamentoChange(e.target.value)}
+             placeholder="Ex: 50% Entrada + 30 Dias ou Pix à vista"
+           />
+        </div>
         </div>
       </section>
 

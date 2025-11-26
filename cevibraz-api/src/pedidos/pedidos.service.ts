@@ -79,6 +79,7 @@ export class PedidosService {
         cliente: cliente,
         atendente: nomeAtendente,
         observacoes: observacoes,
+        condicao_pagamento: dto.condicao_pagamento,
         valor_final: valorFinalParaSalvar,
         status: 'A Fazer',
       });
@@ -140,6 +141,7 @@ export class PedidosService {
       );
 
       pedido.observacoes = observacoes;
+      pedido.condicao_pagamento = dto.condicao_pagamento;
       pedido.valor_final = valorFinalParaSalvar;
 
       this.logger.log(

@@ -38,6 +38,7 @@ export interface QuadroNoEstado {
   medidaFornecidaCliente: boolean;
   limpezaSelecionada: boolean;
   valorCalculado: number;
+  detalhesCalculo?: string[];
 }
 
 // p criar/atualizar pedido envia p api
@@ -46,6 +47,7 @@ export interface PedidoApiDto {
   nomeCliente: string;
   telefoneCliente: string;
   observacoes: string;
+  condicao_pagamento?: string;
   quadros: QuadroNoEstado[];
   valor_final_calculado: number;
   valor_final_manual?: number;
@@ -78,10 +80,12 @@ export interface PedidoBacklog {
 
 // p edição carregar na tela de orçamento
 export interface PedidoParaEdicao {
+  id: number;
   atendente: string;
   clienteNome: string;
   clienteTelefone: string;
   observacoes: string;
+  condicao_pagamento?: string;
   quadros: QuadroNoEstado[];
   valor_final_salvo: number;
 }

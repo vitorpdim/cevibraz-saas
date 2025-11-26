@@ -33,6 +33,9 @@ export class Pedido {
   @Column({ type: 'text', nullable: true })
   observacoes: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  condicao_pagamento: string;
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor_final: number;
 

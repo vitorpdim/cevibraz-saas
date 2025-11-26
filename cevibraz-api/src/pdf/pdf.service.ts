@@ -8,10 +8,8 @@ import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 import { Pedido } from '../pedidos/pedido.entity';
 import { GrupoQuadro, QuadroParaPdf } from '../pedidos/pedido.dto';
-
 import PDFDocument from 'pdfkit';
 
-// --- Constantes de Layout ---
 const MARGEM_ESQUERDA = 72;
 const MARGEM_DIREITA = 72;
 const MARGEM_TOPO = 72;
@@ -68,14 +66,13 @@ export class PdfService implements OnModuleInit {
       this.iconeWhatsappBuffer = Buffer.from(iconeBase64.trim(), 'base64');
     } catch (error) {
       this.logger.error(
-        `Falha ao carregar assets (logo/icone) de: ${this.assetsDir}`,
-        (error as Error).message,
+        `Falha ao carregar assets: ${(error as Error).message}`,
       );
     }
   }
 
   // =================================================================
-  // MÉTODOS PÚBLICOS (Salvar em Disco)
+  // PUBLIC METHODS
   // =================================================================
 
   async gerarPdfPedido(
@@ -94,8 +91,7 @@ export class PdfService implements OnModuleInit {
         valorFinal,
       );
       await fsPromises.writeFile(filePath, buffer);
-      const publicUrl = `/static/pdfs/${filename}`;
-      return publicUrl;
+      return `/static/pdfs/${filename}`;
     } catch (error) {
       this.logger.error(
         `Falha ao gerar PDF (Pedido) ${filename}`,
@@ -115,8 +111,7 @@ export class PdfService implements OnModuleInit {
     try {
       const buffer = await this.gerarPdfOsBuffer(pedidoData, quadrosParaPdf);
       await fsPromises.writeFile(filePath, buffer);
-      const publicUrl = `/static/pdfs/${filename}`;
-      return publicUrl;
+      return `/static/pdfs/${filename}`;
     } catch (error) {
       this.logger.error(
         `Falha ao gerar PDF (OS) ${filename}`,
@@ -127,13 +122,13 @@ export class PdfService implements OnModuleInit {
   }
 
   // =================================================================
-  // NÚCLEO DA GERAÇÃO (EM MEMÓRIA / BUFFER)
+  // CORE GENERATORS (BUFFER)
   // =================================================================
 
   async gerarPdfPedidoBuffer(
     pedidoData: Pedido,
     quadrosParaPdf: QuadroParaPdf[],
-    valorFinal: number,
+    valorFinal: number | string,
   ): Promise<Buffer> {
     const doc: PDFDoc = new PDFDocument({
       size: 'A4',
@@ -148,13 +143,12 @@ export class PdfService implements OnModuleInit {
     const buffers: Buffer[] = [];
     doc.on('data', buffers.push.bind(buffers));
 
-    // --- Desenha o Layout Específico do Pedido ---
     const grupos = this.agruparQuadrosParaPDF(quadrosParaPdf);
-    this.desenharHeaderPedido(doc, pedidoData);
-    let y = this.desenharInfoClientePedido(doc, pedidoData, 160);
+
+    this.desenharHeaderPedido(doc);
+    let y = this.desenharInfoClientePedido(doc, pedidoData, 165);
     y = this.desenharTabelaQuadrosPedido(doc, grupos, y + 10);
-    this.desenharFooterPedido(doc, pedidoData, valorFinal, y + 20);
-    // --- Fim do Desenho ---
+    this.desenharFooterPedido(doc, pedidoData, valorFinal, y);
 
     doc.end();
 
@@ -198,11 +192,11 @@ export class PdfService implements OnModuleInit {
   }
 
   // =================================================================
-  // FUNÇÕES DE DESENHO: PEDIDO (Source 558)
+  // DRAW FUNCTIONS: PEDIDO
   // =================================================================
 
-  private desenharHeaderPedido(doc: PDFDoc, pedido: Pedido) {
-    const yInicio = MARGEM_TOPO - 30; // yInicio = 42
+  private desenharHeaderPedido(doc: PDFDoc) {
+    const yInicio = MARGEM_TOPO - 40;
 
     if (this.logoBuffer) {
       doc.image(this.logoBuffer, MARGEM_ESQUERDA, yInicio, {
@@ -210,25 +204,66 @@ export class PdfService implements OnModuleInit {
       });
     }
 
-    // Direita (Caixa de Informações)
-    const xDireita = LARGURA_DOC_A4 - MARGEM_DIREITA - 180;
-    const yDireita = yInicio + 10;
-    const alturaCaixa = 50;
+    const xDireitaStart = LARGURA_DOC_A4 / 2;
+    const widthDireita = LARGURA_DOC_A4 / 2 - MARGEM_DIREITA;
 
-    doc.rect(xDireita, yDireita, 180, alturaCaixa).stroke();
+    doc.font('Helvetica-Bold').fontSize(14).fillColor('black');
+    doc.text('CEVIBRAZ ESQUADRIAS E VIDROS', xDireitaStart, yInicio + 10, {
+      align: 'right',
+      width: widthDireita,
+    });
+
     doc.font('Helvetica').fontSize(8);
-    doc.text('Emissão:', xDireita + 5, yDireita + 5);
-    doc.text('Atendimento:', xDireita + 5, yDireita + 20);
-    doc.text('Pedido:', xDireita + 5, yDireita + 35);
+    doc.text('ESQUADRIAS DE ALUMÍNIO', xDireitaStart, doc.y, {
+      align: 'right',
+      width: widthDireita,
+    });
+    doc.text('TODOS OS TIPOS DE VIDRO', xDireitaStart, doc.y, {
+      align: 'right',
+      width: widthDireita,
+    });
+    doc.text('QUADROS E MOLDURAS', xDireitaStart, doc.y, {
+      align: 'right',
+      width: widthDireita,
+    });
 
-    doc.font('Helvetica-Bold');
+    doc
+      .font('Helvetica-Bold')
+      .text('CNPJ: 35.594.834/0001-57', xDireitaStart, doc.y + 2, {
+        align: 'right',
+        width: widthDireita,
+      });
+
+    const yAddress = yInicio + 85;
+
+    doc.font('Helvetica').fontSize(9);
     doc.text(
-      new Date(pedido.data_criacao).toLocaleDateString('pt-BR'),
-      xDireita + 70,
-      yDireita + 5,
+      'Av. Prisciliana de Castilho n° 422 - Bairro: Centro - Caraguatatuba/SP - CEP: 11660-330',
+      MARGEM_ESQUERDA,
+      yAddress,
+      { align: 'center', width: LARGURA_CONTEUDO },
     );
-    doc.text(pedido.atendente, xDireita + 70, yDireita + 20);
-    doc.text(pedido.numero_pedido, xDireita + 70, yDireita + 35);
+
+    const phoneText = 'Telefone: (12) 99143-5644';
+    const textWidth = doc.widthOfString(phoneText);
+    const xTextStart = (LARGURA_DOC_A4 - textWidth) / 2;
+    const yPhone = yAddress + 12;
+
+    if (this.iconeWhatsappBuffer) {
+      doc.image(this.iconeWhatsappBuffer, xTextStart - 15, yPhone - 1, {
+        width: 10,
+      });
+    }
+    doc.text(phoneText, MARGEM_ESQUERDA, yPhone, {
+      align: 'center',
+      width: LARGURA_CONTEUDO,
+    });
+
+    doc
+      .moveTo(MARGEM_ESQUERDA, yPhone + 15)
+      .lineTo(LARGURA_DOC_A4 - MARGEM_DIREITA, yPhone + 15)
+      .strokeColor('#ccc')
+      .stroke();
   }
 
   private desenharInfoClientePedido(
@@ -236,59 +271,48 @@ export class PdfService implements OnModuleInit {
     pedido: Pedido,
     y: number,
   ): number {
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(10)
-      .fillColor('black')
-      .text('CLIENTE', MARGEM_ESQUERDA, y);
-    doc
-      .moveTo(MARGEM_ESQUERDA, y + 14)
-      .lineTo(LARGURA_DOC_A4 - MARGEM_DIREITA, y + 14)
-      .stroke();
-    y += 20;
+    const colWidth = LARGURA_CONTEUDO / 3;
 
-    const rowHeight = 20;
-    const col1X = MARGEM_ESQUERDA;
-    const col2X = MARGEM_ESQUERDA + 65;
-    const col3X = MARGEM_ESQUERDA + 250;
-    const col4X = MARGEM_ESQUERDA + 310;
+    doc.font('Helvetica-Bold').fontSize(9).fillColor('black');
 
-    // Linha 1
-    doc.rect(MARGEM_ESQUERDA, y, LARGURA_CONTEUDO, rowHeight).stroke();
-    doc.font('Helvetica-Bold').fontSize(8);
-    doc.text('CLIENTE:', col1X + 5, y + 7);
-    doc.text('ENDEREÇO:', col3X + 5, y + 7);
-    doc.font('Helvetica').fontSize(8);
-    doc.text(pedido.cliente?.nome || 'N/A', col2X, y + 7);
-    doc.text('Av. Prisciliana de Castilho n° 422', col4X, y + 7, {
-      width: LARGURA_CONTEUDO - (col4X - MARGEM_ESQUERDA) - 5,
+    doc.text('DATA:', MARGEM_ESQUERDA, y);
+    doc.text('Nº PEDIDO:', MARGEM_ESQUERDA + colWidth, y);
+    doc.text('ATENDENTE:', MARGEM_ESQUERDA + colWidth * 2, y);
+
+    doc.font('Helvetica').fontSize(10);
+    const dataStr = new Date(pedido.data_criacao).toLocaleDateString('pt-BR');
+    doc.text(dataStr, MARGEM_ESQUERDA, y + 12);
+
+    doc.font('Helvetica-Bold').fillColor('#c00');
+    doc.text(pedido.numero_pedido, MARGEM_ESQUERDA + colWidth, y + 12);
+
+    doc.font('Helvetica').fillColor('black');
+    doc.text(pedido.atendente, MARGEM_ESQUERDA + colWidth * 2, y + 12);
+
+    y += 35;
+
+    doc.font('Helvetica-Bold').fontSize(9);
+    doc.text('CLIENTE:', MARGEM_ESQUERDA, y);
+    doc.text('TELEFONE:', MARGEM_ESQUERDA + LARGURA_CONTEUDO * 0.6, y);
+
+    doc.font('Helvetica').fontSize(10);
+    doc.text(pedido.cliente?.nome || 'N/A', MARGEM_ESQUERDA, y + 12, {
+      width: LARGURA_CONTEUDO * 0.55,
     });
-
-    // Linha 2
-    y += rowHeight;
-    doc.rect(MARGEM_ESQUERDA, y, LARGURA_CONTEUDO, rowHeight).stroke();
-    doc.font('Helvetica-Bold').fontSize(8);
-    doc.text('CEP:', col1X + 5, y + 7);
-    doc.text('TEL:', MARGEM_ESQUERDA + 150, y + 7);
-    doc.font('Helvetica').fontSize(8);
-    doc.text('11660-330', col2X, y + 7);
     doc.text(
-      pedido.cliente?.telefone || '(12) 99143-5644',
-      MARGEM_ESQUERDA + 180,
-      y + 7,
+      pedido.cliente?.telefone || '(XX) XXXX-XXXX',
+      MARGEM_ESQUERDA + LARGURA_CONTEUDO * 0.6,
+      y + 12,
     );
 
-    // Linha 3
-    y += rowHeight;
-    doc.rect(MARGEM_ESQUERDA, y, LARGURA_CONTEUDO, rowHeight).stroke();
-    doc.font('Helvetica-Bold').fontSize(8);
-    doc.text('LOJA:', col1X + 5, y + 7);
-    doc.text('CNPJ:', col3X + 5, y + 7);
-    doc.font('Helvetica').fontSize(8);
-    doc.text('CEVIBRAZ ESQUADRIAS E VIDROS LTDA', col2X, y + 7);
-    doc.text('35594834000157', col4X, y + 7);
+    y += 25;
+    doc
+      .moveTo(MARGEM_ESQUERDA, y)
+      .lineTo(LARGURA_DOC_A4 - MARGEM_DIREITA, y)
+      .strokeColor('#000')
+      .stroke();
 
-    return y + rowHeight;
+    return y;
   }
 
   private desenharTabelaQuadrosPedido(
@@ -298,12 +322,12 @@ export class PdfService implements OnModuleInit {
   ): number {
     const tableTop = y + 20;
     const colWidths = [30, 80, 248, 40, 70];
-
     const colPositions = [MARGEM_ESQUERDA];
     colWidths.reduce((acc, width) => {
       colPositions.push(acc + width);
       return acc + width;
     }, MARGEM_ESQUERDA);
+
     doc.font('Helvetica-Bold').fontSize(8);
     doc
       .rect(colPositions[0], tableTop, LARGURA_CONTEUDO, 20)
@@ -325,7 +349,6 @@ export class PdfService implements OnModuleInit {
       width: colWidths[3] - 10,
       align: 'center',
     });
-    // coluna "valor unitário" REMOVIDA no BAGUIO
     doc.text('Valor Total', colPositions[4] + 5, tableTop + 7, {
       width: colWidths[4] - 10,
       align: 'center',
@@ -336,9 +359,9 @@ export class PdfService implements OnModuleInit {
 
     grupos.forEach((grupo, index) => {
       const desc = this.formatarDescricaoQuadro(grupo.detalhes, true);
-      const valorUnit = grupo.detalhes.valorCalculado; // Ainda precisamos disso para o total
+      const valorUnit = grupo.detalhes.valorCalculado;
       const valorTotalGrupo = valorUnit * grupo.quantidade;
-      const descHeight = doc.heightOfString(desc, { width: colWidths[2] - 10 }); // Usa a nova largura
+      const descHeight = doc.heightOfString(desc, { width: colWidths[2] - 10 });
       const currentLineHeight = Math.max(40, descHeight + 15);
 
       if (yAtual + currentLineHeight > ALTURA_DOC_A4 - MARGEM_FUNDO - 120) {
@@ -395,7 +418,6 @@ export class PdfService implements OnModuleInit {
         align: 'right',
       });
 
-      // Desenha as bordas
       doc.strokeColor('#ccc');
       for (let i = 0; i <= colWidths.length; i++) {
         doc
@@ -420,10 +442,10 @@ export class PdfService implements OnModuleInit {
     valorFinal: number | string,
     y: number,
   ) {
-    const colEsquerdaWidth = LARGURA_CONTEUDO * 0.6; // 280.8
-    const colDireitaWidth = LARGURA_CONTEUDO * 0.4; // 187.2
-    const xDireita = MARGEM_ESQUERDA + colEsquerdaWidth; // 72 + 280.8 = 352.8
-    const alturaCaixa = 120;
+    const colEsquerdaWidth = LARGURA_CONTEUDO * 0.6;
+    const colDireitaWidth = LARGURA_CONTEUDO * 0.4;
+    const xDireita = MARGEM_ESQUERDA + colEsquerdaWidth;
+    const alturaCaixa = 100;
     const yFooterStart = y + 20;
 
     if (yFooterStart + alturaCaixa > ALTURA_DOC_A4 - MARGEM_FUNDO) {
@@ -432,42 +454,46 @@ export class PdfService implements OnModuleInit {
     } else {
       y = yFooterStart;
     }
+
     const valorFinalNumerico = parseFloat(String(valorFinal)) || 0;
+
     doc.font('Helvetica').fontSize(8).fillColor('#333');
+
     doc.rect(MARGEM_ESQUERDA, y, colEsquerdaWidth, alturaCaixa).stroke();
 
     let yAtualEsquerda = y + 5;
+
     doc.font('Helvetica-Bold');
-    doc.text('CONDIÇÃO DE PAGAMENTO:', MARGEM_ESQUERDA + 5, yAtualEsquerda);
-
-    yAtualEsquerda += 30;
-    doc.text('Vendedor:', MARGEM_ESQUERDA + 5, yAtualEsquerda);
-
-    yAtualEsquerda += 10;
+    doc.text(
+      pedido.condicao_pagamento || '',
+      MARGEM_ESQUERDA + 130,
+      yAtualEsquerda,
+    );
     doc.font('Helvetica');
-    doc.text(pedido.atendente, MARGEM_ESQUERDA + 15, yAtualEsquerda);
+    doc.text('(A combinar)', MARGEM_ESQUERDA + 130, yAtualEsquerda);
 
     yAtualEsquerda += 20;
+
     doc.font('Helvetica-Bold');
     doc.text('Observações:', MARGEM_ESQUERDA + 5, yAtualEsquerda);
 
     yAtualEsquerda += 10;
     doc.font('Helvetica');
-    doc.text(pedido.observacoes || '', MARGEM_ESQUERDA + 15, yAtualEsquerda, {
-      width: colEsquerdaWidth - 20,
+    doc.text(pedido.observacoes || '', MARGEM_ESQUERDA + 5, yAtualEsquerda, {
+      width: colEsquerdaWidth - 10,
     });
 
-    // --- Bloco Direita (Totais) ---
     doc.rect(xDireita, y, colDireitaWidth, alturaCaixa).stroke();
 
-    let yAtualDireita = y + 5;
+    let yAtualDireita = y + 15;
     const xTextoDireita = xDireita + 5;
+
     const optionsDireita = {
       align: 'right' as const,
       width: colDireitaWidth - 10,
     };
 
-    doc.font('Helvetica').fontSize(8);
+    doc.font('Helvetica').fontSize(10);
     doc.text('Total da Mercadoria:', xTextoDireita, yAtualDireita);
     doc.text(
       `R$ ${valorFinalNumerico.toFixed(2)}`,
@@ -476,14 +502,8 @@ export class PdfService implements OnModuleInit {
       optionsDireita,
     );
 
-    yAtualDireita += 15;
-    doc.text('Frete:', xTextoDireita, yAtualDireita);
-    doc.text('R$ 0,00', xTextoDireita, yAtualDireita, optionsDireita);
-
-    yAtualDireita += 30; // pula espaço
-    doc.font('Helvetica-Bold').fontSize(11);
-
-    // CORRIGIDO (Bug 3): Label e Valor na MESMA linha 'y'
+    yAtualDireita += 30;
+    doc.font('Helvetica-Bold').fontSize(12);
     doc.text('TOTAL GERAL:', xTextoDireita, yAtualDireita);
     doc.text(
       `R$ ${valorFinalNumerico.toFixed(2)}`,
@@ -491,46 +511,10 @@ export class PdfService implements OnModuleInit {
       yAtualDireita,
       optionsDireita,
     );
-
-    // --- Rodapé da Empresa (Layout 453) ---
-
-    // CORRIGIDO (Bug 4): Sobreposição
-    const yFooterEmpresa = ALTURA_DOC_A4 - MARGEM_FUNDO + 10; // y = 730
-    doc.font('Helvetica').fontSize(8.6).fillColor('#333');
-
-    // 1. Desenha o Endereço
-    doc.text(
-      'Av. Prisciliana de Castilho n° 422 - Bairro: Centro - Caraguatatuba/SP - CEP: 11660-330',
-      MARGEM_ESQUERDA,
-      yFooterEmpresa, // y=730
-      { align: 'center', width: LARGURA_CONTEUDO },
-    );
-
-    // 2. Desenha o Telefone e Ícone ABAIXO (y + 15)
-    const yPhone = yFooterEmpresa + 15; // y = 745
-    const phoneText = 'Telefone: (12) 99143-5644';
-    const textWidth = doc.widthOfString(phoneText);
-
-    // Calcula o X inicial do texto (para centralizá-lo)
-    const xTextStart = (LARGURA_DOC_A4 - textWidth) / 2;
-
-    if (this.iconeWhatsappBuffer) {
-      // Posiciona o ícone 15pt à esquerda do texto
-      const xIcon = xTextStart - 15;
-      doc.image(this.iconeWhatsappBuffer, xIcon, yPhone - 2, { width: 10 });
-    }
-
-    // Desenha o texto do telefone
-    doc.text(
-      phoneText,
-      MARGEM_ESQUERDA,
-      yPhone, // y=745
-      { align: 'center', width: LARGURA_CONTEUDO },
-    );
   }
 
   // =================================================================
-  // FUNÇÕES DE DESENHO: OS (Source 458)
+  // DRAW FUNCTIONS: OS
   // =================================================================
 
   private desenharHeaderOS(doc: PDFDoc) {
@@ -539,7 +523,9 @@ export class PdfService implements OnModuleInit {
       .rect(MARGEM_ESQUERDA - 10, yInicio, LARGURA_CONTEUDO + 20, 110)
       .stroke();
     if (this.logoBuffer) {
-      doc.image(this.logoBuffer, MARGEM_ESQUERDA, yInicio + 10, { width: 150 });
+      doc.image(this.logoBuffer, MARGEM_ESQUERDA, yInicio + 10, {
+        fit: [150, 80],
+      });
     }
     const xDireita = LARGURA_DOC_A4 - MARGEM_DIREITA;
     doc.font('Helvetica-Bold').fontSize(14).fillColor('black');
@@ -675,7 +661,7 @@ export class PdfService implements OnModuleInit {
   }
 
   // =================================================================
-  // FUNÇÕES AUXILIARES (Comuns)
+  // HELPERS
   // =================================================================
 
   private formatarDescricaoQuadro(
@@ -697,14 +683,8 @@ export class PdfService implements OnModuleInit {
     const listaItens: string[] = [];
     if (detalhes.materiais) {
       detalhes.materiais.forEach((mat) => {
-        // Normaliza espessura para número (pode vir como string/undefined). Protege contra NaN.
-        const espessuraRaw = mat.espessura_paspatur_cm;
-        const espessura = Number(espessuraRaw ?? 0);
-        if (
-          mat.nome.toLowerCase() === 'paspatur' &&
-          isFinite(espessura) &&
-          espessura > 0
-        ) {
+        const espessura = mat.espessura_paspatur_cm ?? 0;
+        if (mat.nome.toLowerCase() === 'paspatur' && espessura > 0) {
           listaItens.push(`${mat.nome} (${espessura.toFixed(1)}cm)`);
         } else {
           listaItens.push(mat.nome);

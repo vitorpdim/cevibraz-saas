@@ -41,12 +41,12 @@ export function OrcamentoPage() {
   const [cliente, setCliente] = useState("");
   const [telefone, setTelefone] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [condicaoPagamento, setCondicaoPagamento] = useState("");
   const [quadrosDoPedido, setQuadrosDoPedido] = useState<QuadroNoEstado[]>([]);
   const [valorTotalPedido, setValorTotalPedido] = useState(0);
   const [formQuadro, setFormQuadro] = useState(estadoInicialFormQuadro);
   const { pedidoId } = useParams<{ pedidoId?: string }>();
   const navigate = useNavigate();
-
   const [valorFinalManual, setValorFinalManual] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSalvando, setIsSalvando] = useState(false);
@@ -67,7 +67,7 @@ export function OrcamentoPage() {
         setError("Falha ao carregar dados da API. Verifique o backend.");
       } finally {
         //fodase
-        }
+      }
     };
     carregarDadosIniciais();
   }, []);
@@ -200,6 +200,7 @@ export function OrcamentoPage() {
         id: Math.floor(Math.random() * 1e9),
         ...dto,
         valorCalculado: resultadoCalculo.total,
+        detalhesCalculo: resultadoCalculo.detalhes,
       };
 
       setQuadrosDoPedido((quadrosAtuais) => [...quadrosAtuais, novoQuadro]);
@@ -248,6 +249,7 @@ export function OrcamentoPage() {
         setCliente(pedido.clienteNome);
         setTelefone(pedido.clienteTelefone);
         setObservacoes(pedido.observacoes);
+        setCondicaoPagamento(pedido.condicao_pagamento || "");
         setQuadrosDoPedido(pedido.quadros);
 
         const valorCalculado = pedido.quadros.reduce(
@@ -314,6 +316,7 @@ export function OrcamentoPage() {
       nomeCliente: cliente,
       telefoneCliente: telefone,
       observacoes: observacoes,
+      condicao_pagamento: condicaoPagamento,
       quadros: quadrosDoPedido,
       valor_final_calculado: valorTotalPedido,
       valor_final_manual: valorFinalManual ?? undefined,
@@ -375,6 +378,7 @@ export function OrcamentoPage() {
     isEditing,
     pedidoId,
     navigate,
+    condicaoPagamento,
   ]);
 
   if (isLoading) {
@@ -430,6 +434,8 @@ export function OrcamentoPage() {
           }
           onLimparCampos={handleLimparCampos}
           onAdicionarQuadro={handleAdicionarQuadro}
+          condicaoPagamento={condicaoPagamento}
+          onCondicaoPagamentoChange={setCondicaoPagamento}
         />
 
         <ResumoPedido
