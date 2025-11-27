@@ -72,12 +72,13 @@ export function OrcamentoPage() {
     carregarDadosIniciais();
   }, []);
 
-  useEffect(() => {
+ useEffect(() => {
     const total = quadrosDoPedido.reduce(
       (acc, quadro) => acc + quadro.valorCalculado,
       0
     );
-    setValorTotalPedido(total);
+    const totalArredondado = parseFloat(total.toFixed(2));
+    setValorTotalPedido(totalArredondado);
   }, [quadrosDoPedido]);
 
   useEffect(() => {
