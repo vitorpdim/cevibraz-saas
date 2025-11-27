@@ -116,3 +116,11 @@ export interface UpdateMolduraDto {
   nome?: string;
   valor_metro_linear?: number;
 }
+
+export interface PedidoUpdateDto {
+  observacoes: string;
+  condicao_pagamento?: string;
+  quadros: QuadroNoEstado[];
+  valor_final_calculado: number;
+  valor_final_manual?: number;
+}

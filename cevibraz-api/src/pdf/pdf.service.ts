@@ -472,12 +472,14 @@ export class PdfService implements OnModuleInit {
     let yAtualEsquerda = y + 5;
 
     doc.font('Helvetica-Bold');
-    doc.text('CONDIÇÃO DE PAGAMENTO:', MARGEM_ESQUERDA + 5, yAtualEsquerda);
+    const labelCondicao = 'CONDIÇÃO DE PAGAMENTO:';
+    doc.text(labelCondicao, MARGEM_ESQUERDA + 5, yAtualEsquerda);
+    const larguraLabel = doc.widthOfString(labelCondicao);
+
     doc.font('Helvetica');
     doc.text(
       pedido.condicao_pagamento || '',
-      MARGEM_ESQUERDA + 130,
-      yAtualEsquerda,
+      MARGEM_ESQUERDA + 5 + larguraLabel + 5,
     );
 
     yAtualEsquerda += 20;

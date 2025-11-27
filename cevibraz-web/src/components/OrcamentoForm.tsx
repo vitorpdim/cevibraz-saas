@@ -15,7 +15,7 @@ interface OrcamentoFormProps {
   altura: string;
   largura: string;
   medidaCliente: boolean;
-  molduraSelecionada: string; // Nome da moldura selecionada
+  molduraSelecionada: string;
   materiaisDoQuadro: string[];
   espessuraPaspatur: string;
   isPaspaturVisivel: boolean;
@@ -118,13 +118,13 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
              id="pagamento"
              value={props.condicaoPagamento}
              onChange={(e) => props.onCondicaoPagamentoChange(e.target.value)}
-             placeholder="Ex: 50% Entrada + 30 Dias ou Pix à vista"
+             placeholder="Ex: cartão de crédito, Pix ou À vista"
            />
         </div>
         </div>
       </section>
 
-      {/* Seção 2: Quadro */}
+      {/* section do quadro */}
       <section className="card form-card" style={{ marginTop: "1.5rem" }}>
         <h3>Composição do Quadro</h3>
 
@@ -164,11 +164,9 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
           </label>
         </div>
 
-        {/* NOVA SELEÇÃO DE MOLDURA */}
         <div className="form-group">
           <label>Moldura Selecionada</label>
 
-          {/* Box de Seleção Visual */}
           <div
             style={{
               border: "2px dashed var(--color-border)",
@@ -182,7 +180,6 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
               <div
                 style={{ display: "flex", gap: "1rem", alignItems: "center" }}
               >
-                {/* Mini Preview */}
                 <div
                   style={{
                     width: "80px",
@@ -220,7 +217,6 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
                   )}
                 </div>
 
-                {/* Informações */}
                 <div style={{ flex: 1 }}>
                   <div
                     style={{ fontWeight: "bold", color: "var(--color-text)" }}
@@ -250,7 +246,6 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
                   </div>
                 </div>
 
-                {/* Botões de Ação */}
                 <div
                   style={{
                     display: "flex",
@@ -290,16 +285,15 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
                   className="btn btn-primary"
                   onClick={() => setIsSelectorOpen(true)}
                 >
-                  <ImageIcon size={18} /> Abrir Catálogo de Molduras
+                  <ImageIcon size={18} /> Abrir catálogo de molduras
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Materiais (Checkboxes) */}
         <div className="form-group">
-          <label>Materiais e Acabamentos</label>
+          <label>Materiais e acabamentos</label>
           <div
             style={{
               display: "grid",
@@ -360,9 +354,8 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
           </div>
         )}
 
-        {/* Resumo e Ações Finais */}
         <div className="form-group" style={{ marginTop: "1.5rem" }}>
-          <label>Resumo do Cálculo</label>
+          <label>Resumo do cálculo</label>
           <textarea
             className="form-control"
             readOnly
@@ -392,12 +385,11 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
             onClick={onAdicionarQuadro}
             style={{ flex: 1 }}
           >
-            <Plus size={20} /> Adicionar ao Pedido
+            <Plus size={20} /> Adicionar ao pedido
           </button>
         </div>
       </section>
 
-      {/* Modal de Seleção Integrado */}
       <MolduraSelectorModal
         isOpen={isSelectorOpen}
         onClose={() => setIsSelectorOpen(false)}

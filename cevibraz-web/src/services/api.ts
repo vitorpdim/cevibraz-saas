@@ -5,6 +5,7 @@ import type {
     CalcularQuadroDto,
     CalculoResponse,
     PedidoApiDto,
+    PedidoUpdateDto,
     PedidoBacklog,
     SimpleApiResponse,
     SalvarPedidoResponse,
@@ -74,8 +75,8 @@ export const fetchPedidoById = async (id: number): Promise<PedidoParaEdicao> => 
   return response.data;
 };
 
-export const updatePedido = async (id: number, dto: PedidoApiDto): Promise<SalvarPedidoResponse> => {
-  const response = await apiClient.put(`/api/pedidos/${id}`, dto);
+export const updatePedido = async (id: number, pedido: PedidoUpdateDto) => {
+  const response = await apiClient.put(`/api/pedidos/${id}`, pedido);
   return response.data;
 };
 

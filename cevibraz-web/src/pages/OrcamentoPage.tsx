@@ -4,7 +4,6 @@ import {
   fetchMateriais,
   calcularPrecoQuadro,
   salvarPedido,
-  fetchPdfBase64,
   fetchPedidoById,
   updatePedido,
 } from "../services/api";
@@ -14,6 +13,7 @@ import type {
   QuadroNoEstado,
   CalcularQuadroDto,
   PedidoApiDto,
+  PedidoUpdateDto,
 } from "../types";
 
 import { OrcamentoForm } from "../components/OrcamentoForm";
@@ -72,7 +72,7 @@ export function OrcamentoPage() {
     carregarDadosIniciais();
   }, []);
 
- useEffect(() => {
+  useEffect(() => {
     const total = quadrosDoPedido.reduce(
       (acc, quadro) => acc + quadro.valorCalculado,
       0
@@ -312,10 +312,7 @@ export function OrcamentoPage() {
 
     setIsSalvando(true);
 
-    const dto: PedidoApiDto = {
-      nomeAtendente: atendente,
-      nomeCliente: cliente,
-      telefoneCliente: telefone,
+    const dadosBase = {
       observacoes: observacoes,
       condicao_pagamento: condicaoPagamento,
       quadros: quadrosDoPedido,
@@ -325,46 +322,41 @@ export function OrcamentoPage() {
 
     try {
       let resposta;
+
       if (isEditing && pedidoId) {
-        resposta = await updatePedido(Number(pedidoId), dto);
-        alert(`Pedido atualizado com sucesso!`);
+        const updatePayload: PedidoUpdateDto = {
+          ...dadosBase,
+        };
+
+        resposta = await updatePedido(Number(pedidoId), updatePayload);
+
+        alert("Pedido atualizado com sucesso!");
         navigate("/backlog");
       } else {
-        resposta = await salvarPedido(dto);
+        const createPayload: PedidoApiDto = {
+          ...dadosBase,
+          nomeAtendente: atendente,
+          nomeCliente: cliente,
+          telefoneCliente: telefone,
+        };
+
+        resposta = await salvarPedido(createPayload);
         alert(`Pedido ${resposta.numeroPedido} salvo com sucesso!`);
 
         if (resposta.pdf_pedido_url) {
-          const filename = `pedido_${resposta.numeroPedido}.pdf`;
-          try {
-            const base64Data = await fetchPdfBase64(resposta.pedidoId, "pdf");
-            const link = document.createElement("a");
-            link.href = `data:application/pdf;base64,${base64Data}`;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          } catch (downloadError) {
-            console.error("Erro ao baixar o PDF:", downloadError);
-            alert("Erro ao baixar o PDF. Verifique o console.");
-          }
+          const link = document.createElement("a");
+          link.href = resposta.pdf_pedido_url;
+          link.download = `pedido_${resposta.numeroPedido}.pdf`;
+          link.target = "_blank";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         }
         handleLimparPedido(false);
       }
     } catch (error: unknown) {
-      interface AxiosErrorLike {
-        response?: { data?: { message?: string } | string };
-        message?: string;
-      }
-      const errObj = error as AxiosErrorLike;
-      const responseData = errObj.response?.data;
-      const serverMsg =
-        (typeof responseData === "object" &&
-          (responseData as { message?: string }).message) ||
-        (typeof responseData === "string" && responseData) ||
-        errObj.message ||
-        "Erro desconhecido";
-      console.error("Erro ao salvar pedido:", errObj.response ?? errObj);
-      alert(`Erro ao salvar o pedido: ${serverMsg}`);
+      console.error("Erro ao salvar:", error);
+      alert("Erro ao salvar o pedido. Verifique o console.");
     } finally {
       setIsSalvando(false);
     }
@@ -373,13 +365,13 @@ export function OrcamentoPage() {
     cliente,
     telefone,
     observacoes,
+    condicaoPagamento,
     quadrosDoPedido,
     valorTotalPedido,
     valorFinalManual,
     isEditing,
     pedidoId,
     navigate,
-    condicaoPagamento,
   ]);
 
   if (isLoading) {

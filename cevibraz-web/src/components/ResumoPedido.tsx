@@ -143,7 +143,7 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
       {onValorFinalManualChange && (
         <div className="form-group" style={{ marginTop: 8 }}>
           <label htmlFor="valorFinalManual">
-            Editar Valor Final (opcional)
+            Editar valor final (opcional)
           </label>
           <input
             type="number"

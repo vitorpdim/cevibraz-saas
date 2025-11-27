@@ -943,9 +943,10 @@ body {
 
 .moldura-selector-layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 24px;
+  grid-template-columns: 320px 1fr; 
+  gap: 32px;
   margin-top: 16px;
+  padding: 0 16px 16px 16px; 
 }
 
 .moldura-preview-section {
@@ -964,6 +965,7 @@ body {
 .moldura-preview-image {
   width: 100%;
   aspect-ratio: 1;
+  height: 420px;
   background: linear-gradient(
     135deg,
     rgba(72, 187, 120, 0.05),
