@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { IsString, IsNumber, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, IsIn } from 'class-validator';
 
 export class QuadroDto {
   altura: number;
@@ -63,6 +63,8 @@ export class UpdatePedidoDto {
 
 // DTO p atualizar so o status
 export class UpdateStatusDto {
+  @IsString()
+  @IsIn(['A Fazer', 'Já Feito', 'Entregue'])
   status: 'A Fazer' | 'Já Feito' | 'Entregue';
 }
 
