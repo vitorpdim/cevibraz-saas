@@ -6,6 +6,7 @@ import {
   salvarPedido,
   fetchPedidoById,
   updatePedido,
+  fetchPdfBase64,
 } from "../services/api";
 import type {
   Moldura,
@@ -312,52 +313,8 @@ export function OrcamentoPage() {
 
     setIsSalvando(true);
 
-    const downloadComRetry = async (
-      url: string,
-      filename: string,
-      tentativas = 3
-    ) => {
-      for (let i = 0; i < tentativas; i++) {
-        try {
-          const response = await fetch(url);
-
-          if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-
-          const blob = await response.blob();
-
-          if (blob.type.includes("application/json")) {
-            const textoErro = await blob.text();
-            throw new Error(
-              `O servidor retornou um JSON em vez de PDF: ${textoErro}`
-            );
-          }
-
-          if (blob.size < 1000) {
-             const textoErro = await blob.text(); // Lê o conteúdo do arquivo
-             console.error("Conteúdo do arquivo suspeito:", textoErro);
-             alert(`O servidor retornou um erro em vez do PDF:\n\n${textoErro.substring(0, 500)}...`);
-             throw new Error("Arquivo não é um PDF válido");
-          }
-
-          const blobUrl = window.URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = blobUrl;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(blobUrl);
-          return;
-        } catch (error) {
-          console.warn(`Tentativa de download ${i + 1} falhou:`, error);
-          if (i === tentativas - 1) throw error;
-          await new Promise((resolve) => setTimeout(resolve, 1500));
-        }
-      }
-    };
-
     const dadosBase = {
-      observacoes,
+      observacoes: observacoes,
       condicao_pagamento: condicaoPagamento,
       quadros: quadrosDoPedido,
       valor_final_calculado: valorTotalPedido,
@@ -384,29 +341,39 @@ export function OrcamentoPage() {
         alert(`Pedido ${resposta.numeroPedido} salvo com sucesso!`);
 
         if (resposta.pdf_pedido_url) {
-          const filename = `pedido_${resposta.numeroPedido}.pdf`;
-
-          const urlCompleta = resposta.pdf_pedido_url.startsWith("http")
-            ? resposta.pdf_pedido_url
-            : `${import.meta.env.VITE_API_URL}${resposta.pdf_pedido_url}`;
-
-          await downloadComRetry(urlCompleta, filename);
+          try {
+            const pdfBase64 = await fetchPdfBase64(resposta.pedidoId, "pdf");
+            const link = document.createElement("a");
+            link.href = `data:application/pdf;base64,${pdfBase64}`;
+            link.download = `pedido_${resposta.numeroPedido}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } catch (downloadError) {
+            console.warn("Erro ao baixar PDF automático:", downloadError);
+            alert("Pedido salvo! O PDF pode ser baixado no Backlog.");
+          }
         }
         handleLimparPedido(false);
       }
     } catch (error: unknown) {
       let serverMsg = "Erro desconhecido";
 
-      if (error && typeof error === "object" && "response" in error) {
+      if (typeof error === "object" && error !== null && "response" in error) {
         const axiosError = error as { response?: { data?: unknown } };
         const data = axiosError.response?.data;
 
         if (typeof data === "string") {
           serverMsg = data;
-        } else if (data && typeof data === "object") {
+        } else if (typeof data === "object" && data !== null) {
           if ("message" in data) {
-            const msg = (data as { message: string | string[] }).message;
-            serverMsg = Array.isArray(msg) ? msg.join(", ") : String(msg);
+            const msgProp = (data as { message: unknown }).message;
+
+            if (Array.isArray(msgProp)) {
+              serverMsg = msgProp.join(", ");
+            } else if (typeof msgProp === "string") {
+              serverMsg = msgProp;
+            }
           }
         }
       } else if (error instanceof Error) {
@@ -414,7 +381,7 @@ export function OrcamentoPage() {
       }
 
       console.error("Erro ao salvar:", error);
-      alert(`Erro ao salvar/baixar: ${serverMsg}`);
+      alert(`Erro ao salvar o pedido: ${serverMsg}`);
     } finally {
       setIsSalvando(false);
     }
