@@ -10,6 +10,7 @@ import { Pedido } from '../pedidos/pedido.entity';
 import { GrupoQuadro, QuadroParaPdf } from '../pedidos/pedido.dto';
 import PDFDocument from 'pdfkit';
 
+// --- Constantes de Layout ---
 const MARGEM_ESQUERDA = 72;
 const MARGEM_DIREITA = 72;
 const MARGEM_TOPO = 72;
@@ -145,8 +146,12 @@ export class PdfService implements OnModuleInit {
 
     const grupos = this.agruparQuadrosParaPDF(quadrosParaPdf);
 
+    // Cabeçalho estilo legado (sem dados do pedido, apenas empresa)
     this.desenharHeaderPedido(doc);
+
+    // Info Grid com dados do Pedido + Cliente
     let y = this.desenharInfoClientePedido(doc, pedidoData, 165);
+
     y = this.desenharTabelaQuadrosPedido(doc, grupos, y + 10);
     this.desenharFooterPedido(doc, pedidoData, valorFinal, y);
 
@@ -201,6 +206,7 @@ export class PdfService implements OnModuleInit {
     if (this.logoBuffer) {
       doc.image(this.logoBuffer, MARGEM_ESQUERDA, yInicio, {
         fit: [150, 80],
+        // align removido para corrigir erro TS(2322)
       });
     }
 
@@ -359,7 +365,7 @@ export class PdfService implements OnModuleInit {
 
     grupos.forEach((grupo, index) => {
       const desc = this.formatarDescricaoQuadro(grupo.detalhes, true);
-      const valorUnit = grupo.detalhes.valorCalculado;
+      const valorUnit = parseFloat(String(grupo.detalhes.valorCalculado || 0));
       const valorTotalGrupo = valorUnit * grupo.quantidade;
       const descHeight = doc.heightOfString(desc, { width: colWidths[2] - 10 });
       const currentLineHeight = Math.max(40, descHeight + 15);
@@ -413,6 +419,8 @@ export class PdfService implements OnModuleInit {
         width: colWidths[3] - 10,
         align: 'center',
       });
+
+      // CORRIGIDO: .toFixed(2) para evitar muitos decimais
       doc.text(valorTotalGrupo.toFixed(2), colPositions[4] + 5, yCell, {
         width: colWidths[4] - 10,
         align: 'right',
@@ -464,13 +472,13 @@ export class PdfService implements OnModuleInit {
     let yAtualEsquerda = y + 5;
 
     doc.font('Helvetica-Bold');
+    doc.text('CONDIÇÃO DE PAGAMENTO:', MARGEM_ESQUERDA + 5, yAtualEsquerda);
+    doc.font('Helvetica');
     doc.text(
       pedido.condicao_pagamento || '',
       MARGEM_ESQUERDA + 130,
       yAtualEsquerda,
     );
-    doc.font('Helvetica');
-    doc.text('(A combinar)', MARGEM_ESQUERDA + 130, yAtualEsquerda);
 
     yAtualEsquerda += 20;
 
@@ -683,7 +691,8 @@ export class PdfService implements OnModuleInit {
     const listaItens: string[] = [];
     if (detalhes.materiais) {
       detalhes.materiais.forEach((mat) => {
-        const espessura = mat.espessura_paspatur_cm ?? 0;
+        // CORREÇÃO CRÍTICA: parseFloat para evitar erro de .toFixed is not a function
+        const espessura = parseFloat(String(mat.espessura_paspatur_cm ?? 0));
         if (mat.nome.toLowerCase() === 'paspatur' && espessura > 0) {
           listaItens.push(`${mat.nome} (${espessura.toFixed(1)}cm)`);
         } else {
@@ -719,10 +728,9 @@ export class PdfService implements OnModuleInit {
         .join(',');
       const materiaisOrdenados = (quadro.materiais || [])
         .map((m) => {
-          const espessuraKey =
-            (m.espessura_paspatur_cm ?? 0) > 0
-              ? `-${m.espessura_paspatur_cm}`
-              : '';
+          // CORREÇÃO CRÍTICA: Garantir que espessura é number
+          const espessura = parseFloat(String(m.espessura_paspatur_cm ?? 0));
+          const espessuraKey = espessura > 0 ? `-${espessura}` : '';
           return `${m.nome}${
             m.nome.toLowerCase() === 'paspatur' ? espessuraKey : ''
           }`;
