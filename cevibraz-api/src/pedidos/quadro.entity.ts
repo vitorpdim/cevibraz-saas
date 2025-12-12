@@ -20,13 +20,17 @@ export class Quadro {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   largura_cm: number;
 
+  // NOVO: acrescimo em cm p calculo de materiais/vidro
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  acrescimo_cm: number;
+
   @Column({ default: false })
   medida_fornecida_cliente: boolean;
 
   @Column({ default: false })
   limpeza_flag: boolean;
 
-  // --- Relações ---
+  // --- relações ---
   @ManyToOne(() => Pedido, (pedido) => pedido.quadros, { onDelete: 'CASCADE' })
   pedido: Pedido;
 

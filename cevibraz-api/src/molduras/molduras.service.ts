@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm'; // add In
 import { Moldura } from './moldura.entity';
 import { CreateMolduraDto, UpdateMolduraDto } from './moldura.dto';
 import { unlink } from 'fs/promises';
@@ -84,5 +84,34 @@ export class MoldurasService {
 
     await this.moldurasRepository.remove(moldura);
     return { message: 'Moldura deletada com sucesso' };
+  }
+
+  // remover várias molduras por id (apaga tb arquivos)
+  async removeMany(ids: number[]): Promise<{ message: string }> {
+    if (!ids || ids.length === 0) {
+      return { message: 'Nenhum id fornecido' };
+    }
+
+    const molduras = await this.moldurasRepository.findBy({ id: In(ids) });
+
+    for (const moldura of molduras) {
+      if (moldura.imagem_url) {
+        const filePath = join(
+          process.env.STORAGE_PATH || './storage',
+          moldura.imagem_url.replace('/static/', ''),
+        );
+        try {
+          await unlink(filePath);
+        } catch (error) {
+          console.error(
+            `erro ao deletar imagem da moldura ${moldura.id}:`,
+            error,
+          );
+        }
+      }
+    }
+
+    await this.moldurasRepository.remove(molduras);
+    return { message: `${molduras.length} moldura(s) deletada(s) com sucesso` };
   }
 }

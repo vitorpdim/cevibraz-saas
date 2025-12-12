@@ -27,9 +27,10 @@ const estadoInicialFormQuadro = {
   medidaCliente: false,
   molduraSelecionada: "",
   moldurasDoQuadro: [] as string[],
-  materiaisDoQuadro: [] as string[],
+  materiaisDoQuadro: {} as Record<string, number>, // agora mapa nome -> quantidade
   espessuraPaspatur: "",
   isPaspaturVisivel: false,
+  acrescimo: "", // novo
   resumoDoQuadro: "Preencha os campos para ver o resumo.",
 };
 
@@ -51,6 +52,7 @@ export function OrcamentoPage() {
   const [valorFinalManual, setValorFinalManual] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSalvando, setIsSalvando] = useState(false);
+  const [ocultarValoresUnitarios, setOcultarValoresUnitarios] = useState(false);
 
   useEffect(() => {
     const carregarDadosIniciais = async () => {
@@ -64,8 +66,8 @@ export function OrcamentoPage() {
         setMoldurasList(moldurasData);
         setMateriaisList(materiaisData);
       } catch (err) {
-        console.error("Erro ao buscar dados iniciais:", err);
-        setError("Falha ao carregar dados da API. Verifique o backend.");
+        console.error("erro ao buscar dados iniciais:", err);
+        setError("Falha ao carregar dados da API. Verifique o backend!");
       } finally {
         //fodase
       }
@@ -82,6 +84,7 @@ export function OrcamentoPage() {
     setValorTotalPedido(totalArredondado);
   }, [quadrosDoPedido]);
 
+  // atualiza o resumo com base nos materiais (agora mapa)
   useEffect(() => {
     const {
       altura,
@@ -92,20 +95,25 @@ export function OrcamentoPage() {
       isPaspaturVisivel,
     } = formQuadro;
 
-    let resumo = "Preencha os campos para ver o resumo."; // Padrão
+    let resumo = "Preencha os campos para ver o resumo.";
+
+    const materiaisSelecionadosNomes = Object.entries(materiaisDoQuadro || {})
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .filter(([_, qty]) => qty > 0)
+      .map(([name, qty]) => `${name}${qty > 1 ? ` x${qty}` : ""}`);
 
     if (
       altura ||
       largura ||
       moldurasDoQuadro.length > 0 ||
-      materiaisDoQuadro.length > 0
+      materiaisSelecionadosNomes.length > 0
     ) {
       resumo = `Medidas: ${altura || 0}cm x ${largura || 0}cm.\n`;
       if (moldurasDoQuadro.length > 0) {
         resumo += `Molduras: ${moldurasDoQuadro.join(", ")}.\n`;
       }
-      if (materiaisDoQuadro.length > 0) {
-        resumo += `Materiais: ${materiaisDoQuadro.join(", ")}.\n`;
+      if (materiaisSelecionadosNomes.length > 0) {
+        resumo += `Materiais: ${materiaisSelecionadosNomes.join(", ")}.\n`;
       }
       if (isPaspaturVisivel && espessuraPaspatur) {
         resumo += `Esp. Paspatur: ${espessuraPaspatur}cm.`;
@@ -125,7 +133,6 @@ export function OrcamentoPage() {
     formQuadro.materiaisDoQuadro,
     formQuadro.espessuraPaspatur,
     formQuadro.isPaspaturVisivel,
-    formQuadro,
   ]);
 
   const handleAddMoldura = () => {
@@ -151,19 +158,18 @@ export function OrcamentoPage() {
     }));
   };
 
-  const handleMaterialChange = (materialNome: string, isChecked: boolean) => {
+  const handleMaterialChange = (materialNome: string, quantidade: number) => {
     setFormQuadro((prevState) => {
-      const novosMateriais = isChecked
-        ? [...prevState.materiaisDoQuadro, materialNome]
-        : prevState.materiaisDoQuadro.filter((m) => m !== materialNome);
-
-      const paspaturVisivel = novosMateriais.includes("Paspatur");
-
+      const novos = { ...(prevState.materiaisDoQuadro || {}) };
+      if (quantidade <= 0) {
+        delete novos[materialNome];
+      } else {
+        novos[materialNome] = quantidade;
+      }
       return {
         ...prevState,
-        materiaisDoQuadro: novosMateriais,
-        isPaspaturVisivel: paspaturVisivel,
-        espessuraPaspatur: paspaturVisivel ? prevState.espessuraPaspatur : "",
+        materiaisDoQuadro: novos,
+        isPaspaturVisivel: Object.keys(novos).some((n) => n === "Paspatur"),
       };
     });
   };
@@ -186,21 +192,38 @@ export function OrcamentoPage() {
     }
 
     try {
+      // criar array de materiais repetidos conforme quantidades
+      const materiaisSelecionadosArray: string[] = [];
+      for (const [nome, qty] of Object.entries(
+        formQuadro.materiaisDoQuadro || {}
+      )) {
+        for (let i = 0; i < Math.max(0, Math.floor(qty)); i++) {
+          materiaisSelecionadosArray.push(nome);
+        }
+      }
+
       const dto: CalcularQuadroDto = {
         altura: alturaNum,
         largura: larguraNum,
         medidaFornecidaCliente: formQuadro.medidaCliente,
         moldurasSelecionadas: formQuadro.moldurasDoQuadro,
-        materiaisSelecionados: formQuadro.materiaisDoQuadro,
+        materiaisSelecionados: materiaisSelecionadosArray,
         espessuraPaspatur: parseFloat(formQuadro.espessuraPaspatur || "0"),
-        limpezaSelecionada: formQuadro.materiaisDoQuadro.includes("Limpeza"),
+        limpezaSelecionada: materiaisSelecionadosArray.includes("Limpeza"),
+        acrescimo_cm: parseFloat(formQuadro.acrescimo || "0"), // novo
       };
 
       const resultadoCalculo = await calcularPrecoQuadro(dto);
 
       const novoQuadro: QuadroNoEstado = {
         id: Math.floor(Math.random() * 1e9),
-        ...dto,
+        altura: dto.altura,
+        largura: dto.largura,
+        moldurasSelecionadas: dto.moldurasSelecionadas,
+        materiaisSelecionados: dto.materiaisSelecionados,
+        espessuraPaspatur: dto.espessuraPaspatur,
+        medidaFornecidaCliente: dto.medidaFornecidaCliente,
+        limpezaSelecionada: dto.limpezaSelecionada,
         valorCalculado: resultadoCalculo.total,
         detalhesCalculo: resultadoCalculo.detalhes,
       };
@@ -213,24 +236,9 @@ export function OrcamentoPage() {
           2
         )}`,
       }));
-    } catch (error: unknown) {
-      interface AxiosErrorLike {
-        response?: { data?: { message?: string } | string };
-        message?: string;
-      }
-      const errObj = error as AxiosErrorLike;
-      const responseData = errObj.response?.data;
-      const serverMsg =
-        (typeof responseData === "object" &&
-          (responseData as { message?: string }).message) ||
-        (typeof responseData === "string" && responseData) ||
-        errObj.message ||
-        "Erro desconhecido";
-      console.error(
-        "Erro ao calcular/adicionar quadro:",
-        errObj.response ?? errObj
-      );
-      alert(`Erro ao calcular o preço: ${serverMsg}`);
+    } catch (err: unknown) {
+      console.error("Erro ao calcular/adicionar quadro:", err);
+      alert("Erro ao calcular o preço. Verifique o console.");
     }
   }, [formQuadro]);
 
@@ -240,6 +248,7 @@ export function OrcamentoPage() {
     );
   };
 
+  // ao carregar um pedido p edição aplica a flag
   useEffect(() => {
     const carregarPedidoParaEdicao = async (id: string) => {
       try {
@@ -265,6 +274,9 @@ export function OrcamentoPage() {
         } else {
           setValorFinalManual(null);
         }
+
+        // aplica preferência do pedido
+        setOcultarValoresUnitarios(pedido.ocultar_valores_unitarios ?? false);
 
         setIsEditing(true);
       } catch (err) {
@@ -319,6 +331,7 @@ export function OrcamentoPage() {
       quadros: quadrosDoPedido,
       valor_final_calculado: valorTotalPedido,
       valor_final_manual: valorFinalManual ?? undefined,
+      ocultar_valores_unitarios: ocultarValoresUnitarios, // envia a preferência
     };
 
     try {
@@ -397,6 +410,7 @@ export function OrcamentoPage() {
     isEditing,
     pedidoId,
     navigate,
+    ocultarValoresUnitarios,
   ]);
 
   if (isLoading) {
@@ -432,6 +446,7 @@ export function OrcamentoPage() {
           materiaisDoQuadro={formQuadro.materiaisDoQuadro}
           espessuraPaspatur={formQuadro.espessuraPaspatur}
           isPaspaturVisivel={formQuadro.isPaspaturVisivel}
+          acrescimo={formQuadro.acrescimo}
           resumoDoQuadro={formQuadro.resumoDoQuadro}
           onAtendenteChange={setAtendente}
           onClienteChange={setCliente}
@@ -450,6 +465,7 @@ export function OrcamentoPage() {
           onEspessuraPaspaturChange={(v) =>
             setFormQuadro((f) => ({ ...f, espessuraPaspatur: v }))
           }
+          onAcrescimoChange={(v) => setFormQuadro((f) => ({ ...f, acrescimo: v }))}
           onLimparCampos={handleLimparCampos}
           onAdicionarQuadro={handleAdicionarQuadro}
           condicaoPagamento={condicaoPagamento}
@@ -468,6 +484,8 @@ export function OrcamentoPage() {
           onValorFinalManualChange={setValorFinalManual}
           isEditing={isEditing}
           isSalvando={isSalvando}
+          ocultarValoresUnitarios={ocultarValoresUnitarios}
+          onOcultarValoresUnitariosChange={setOcultarValoresUnitarios}
         />
       </div>
     </div>

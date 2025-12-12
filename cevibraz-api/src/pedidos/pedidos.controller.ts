@@ -40,8 +40,6 @@ export class PedidosController {
     return String(error);
   }
 
-  // ... (create, findAll, findOne, update, updateStatus, remove - MANTIDOS) ...
-
   @Post()
   async create(@Body() createPedidoDto: CreatePedidoDto) {
     try {
@@ -129,9 +127,6 @@ export class PedidosController {
     }
   }
 
-  // --- Endpoints de PDF (Refatorados) ---
-  // (Agora chamam os métodos 'Buffer' do PdfService)
-
   @Get(':id/pdf')
   async getPdfPedido(
     @Param('id') id: string,
@@ -166,7 +161,6 @@ export class PedidosController {
         }),
       );
 
-      // CORREÇÃO: Chama o gerador de BUFFER
       const pdfBuffer = await this.pdfService.gerarPdfPedidoBuffer(
         pedidoEntity,
         quadrosParaPdf,
@@ -175,7 +169,6 @@ export class PedidosController {
 
       const filename = `pedido_${pedidoEntity.numero_pedido}.pdf`;
 
-      // Envia o JSON (como o app.js e backlog.js esperam)
       res.json({
         success: true,
         pdfData: pdfBuffer.toString('base64'),
@@ -218,7 +211,6 @@ export class PedidosController {
         }),
       );
 
-      // CORREÇÃO: Chama o gerador de BUFFER
       const pdfBuffer = await this.pdfService.gerarPdfOsBuffer(
         pedidoEntity,
         quadrosParaPdf,
@@ -226,7 +218,6 @@ export class PedidosController {
 
       const filename = `os_${pedidoEntity.numero_pedido}.pdf`;
 
-      // Envia o JSON
       res.json({
         success: true,
         pdfData: pdfBuffer.toString('base64'),

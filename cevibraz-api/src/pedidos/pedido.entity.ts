@@ -46,6 +46,10 @@ export class Pedido {
   @Column({ type: 'text', nullable: true })
   pdf_os_url: string;
 
+  // NOVO: flag p ocultar/preferência de exibir preços unitários no pdf
+  @Column({ type: 'boolean', default: false })
+  ocultar_valores_unitarios: boolean;
+
   // --- relações ---
   @ManyToOne(() => Cliente, (cliente) => cliente.pedidos, {
     onDelete: 'SET NULL',

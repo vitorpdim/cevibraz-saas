@@ -1,5 +1,5 @@
 import { QuadroMoldura } from '../pedidos/quadro-moldura.entity';
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm'; // Adicione OneToMany
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 
 @Entity('molduras')
 export class Moldura {

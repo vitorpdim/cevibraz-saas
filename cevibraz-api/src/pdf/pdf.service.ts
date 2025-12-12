@@ -138,9 +138,14 @@ export class PdfService implements OnModuleInit {
     const grupos = this.agruparQuadrosParaPDF(quadrosParaPdf);
 
     this.desenharHeaderPedido(doc);
-    // Aumentei o Y inicial para dar mais respiro após o header
     let y = this.desenharInfoClientePedido(doc, pedidoData, 180);
-    y = this.desenharTabelaQuadrosPedido(doc, grupos, y + 15);
+    // PASSA A FLAG do pedido para controlar exibição de preços
+    y = this.desenharTabelaQuadrosPedido(
+      doc,
+      grupos,
+      y + 15,
+      pedidoData.ocultar_valores_unitarios ?? false,
+    );
     this.desenharFooterPedido(doc, pedidoData, valorFinal, y);
 
     doc.end();
@@ -310,6 +315,7 @@ export class PdfService implements OnModuleInit {
     doc: PDFDoc,
     grupos: GrupoQuadro[],
     y: number,
+    ocultarPrecosIndividuais: boolean,
   ): number {
     const tableTop = y + 20;
     // Ajuste nas larguras para dar mais espaço à descrição
@@ -352,7 +358,12 @@ export class PdfService implements OnModuleInit {
     doc.font('Helvetica').fontSize(8);
 
     grupos.forEach((grupo, index) => {
-      const desc = this.formatarDescricaoQuadro(grupo.detalhes, true);
+      // agora passamos a flag ao formatar descrição
+      const desc = this.formatarDescricaoQuadro(
+        grupo.detalhes,
+        true,
+        ocultarPrecosIndividuais,
+      );
       const valorUnit = parseFloat(String(grupo.detalhes.valorCalculado || 0));
       const valorTotalGrupo = valorUnit * grupo.quantidade;
 
@@ -669,47 +680,67 @@ export class PdfService implements OnModuleInit {
     return y + obsHeight;
   }
 
+  // helper p formatar números com casas decimais
+  private formatarDecimal(valor: number | string, casas = 1): string {
+    const n = parseFloat(String(valor ?? 0));
+    return n.toFixed(casas);
+  }
+
+  // substitui o método anterior formatarDescricaoQuadro
   private formatarDescricaoQuadro(
-    detalhes: QuadroParaPdf,
-    mostrarPreco: boolean,
+    quadro: QuadroParaPdf,
+    incluirValores: boolean,
+    ocultarPrecosIndividuais: boolean = false,
   ): string {
     const listaDesc: string[] = [];
-    let medidasStr = `${parseFloat(detalhes.altura_cm.toString()).toFixed(1)}cm x ${parseFloat(detalhes.largura_cm.toString()).toFixed(1)}cm`;
-    if (detalhes.medidaFornecidaCliente) {
-      medidasStr = `(Medida do cliente) ${medidasStr}`;
-    }
-    listaDesc.push(`Medidas: ${medidasStr}`);
+    const altura = this.formatarDecimal(quadro.altura_cm);
+    const largura = this.formatarDecimal(quadro.largura_cm);
 
-    if (detalhes.molduras && detalhes.molduras.length > 0) {
-      const moldurasTexto = detalhes.molduras.map((m) => m.nome).join(', ');
-      listaDesc.push(`Moldura(s): ${moldurasTexto}`);
+    // verifica se tem acréscimo p mostrar na desc principal
+    const acrescimo = quadro.acrescimo_cm
+      ? parseFloat(String(quadro.acrescimo_cm))
+      : 0;
+    let textoDimensoes = `Quadro: ${altura}cm x ${largura}cm`;
+
+    if (acrescimo > 0) {
+      textoDimensoes += ` (+${acrescimo}cm folga)`;
     }
 
+    listaDesc.push(textoDimensoes);
+
+    // se tiver detalhes e não for p ocultar, mostra tudo
+    if (
+      incluirValores &&
+      quadro.detalhesCalculo &&
+      quadro.detalhesCalculo.detalhes &&
+      !ocultarPrecosIndividuais
+    ) {
+      const detalhesCompletos = [...(quadro.detalhesCalculo?.detalhes || [])];
+      return listaDesc[0] + '\n' + detalhesCompletos.join('\n');
+    }
+
+    // Se for p ocultar os preços, monta so os nomes
     const listaItens: string[] = [];
-    if (detalhes.materiais) {
-      detalhes.materiais.forEach((mat) => {
-        const espessura = parseFloat(String(mat.espessura_paspatur_cm ?? 0));
-        if (mat.nome.toLowerCase() === 'paspatur' && espessura > 0) {
-          listaItens.push(`${mat.nome} (${espessura.toFixed(1)}cm)`);
-        } else {
-          listaItens.push(mat.nome);
+
+    if (quadro.molduras && quadro.molduras.length > 0) {
+      const nomes = quadro.molduras.map((m) => m.nome || m.codigo).join(', ');
+      listaItens.push(`Molduras: ${nomes}`);
+    }
+
+    if (quadro.materiais && quadro.materiais.length > 0) {
+      quadro.materiais.forEach((m) => {
+        let itemDesc = m.nome;
+        if (m.nome.toLowerCase() === 'paspatur' && m.espessura_paspatur_cm) {
+          itemDesc += ` (${this.formatarDecimal(m.espessura_paspatur_cm, 1)}cm)`;
         }
+        listaItens.push(itemDesc);
       });
     }
 
-    if (detalhes.limpezaSelecionada) {
-      if (mostrarPreco && detalhes.detalhesCalculo) {
-        const detalheLimpeza = (detalhes.detalhesCalculo?.detalhes || []).find(
-          (d: string) => d.startsWith('Limpeza:'),
-        );
-        listaItens.push(detalheLimpeza || 'Limpeza');
-      } else {
-        listaItens.push('Limpeza');
-      }
-    }
     if (listaItens.length > 0) {
-      listaDesc.push(`Itens: ${listaItens.join(', ')}`);
+      listaDesc.push(listaItens.join(' + '));
     }
+
     return listaDesc.join('\n');
   }
 

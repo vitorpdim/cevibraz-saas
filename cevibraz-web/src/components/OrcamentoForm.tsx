@@ -16,7 +16,7 @@ interface OrcamentoFormProps {
   largura: string;
   medidaCliente: boolean;
   molduraSelecionada: string;
-  materiaisDoQuadro: string[];
+  materiaisDoQuadro: Record<string, number>; // mudou de string[] p mapa nome -> quantidade
   espessuraPaspatur: string;
   isPaspaturVisivel: boolean;
   resumoDoQuadro: string;
@@ -30,12 +30,14 @@ interface OrcamentoFormProps {
   onMolduraSelecionadaChange: (value: string) => void;
   onAddMoldura: () => void;
   onRemoveUltimaMoldura: () => void;
-  onMaterialChange: (materialNome: string, isChecked: boolean) => void;
+  onMaterialChange: (materialNome: string, quantidade: number) => void; // agr ta recebendo quantidade
   onEspessuraPaspaturChange: (value: string) => void;
   onLimparCampos: () => void;
   onAdicionarQuadro: () => void;
   condicaoPagamento: string;
   onCondicaoPagamentoChange: (val: string) => void;
+  acrescimo: string;
+  onAcrescimoChange: (value: string) => void;
 }
 
 export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
@@ -65,6 +67,10 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
     onEspessuraPaspaturChange,
     onLimparCampos,
     onAdicionarQuadro,
+    condicaoPagamento,
+    onCondicaoPagamentoChange,
+    acrescimo,
+    onAcrescimoChange,
   } = props;
 
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
@@ -116,8 +122,8 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
              type="text"
              className="form-control"
              id="pagamento"
-             value={props.condicaoPagamento}
-             onChange={(e) => props.onCondicaoPagamentoChange(e.target.value)}
+             value={condicaoPagamento}
+             onChange={(e) => onCondicaoPagamentoChange(e.target.value)}
              placeholder="Ex: cartão de crédito, Pix ou À vista"
            />
         </div>
@@ -297,45 +303,49 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
               gap: "0.5rem",
               marginTop: "0.5rem",
             }}
           >
-            {materiaisList.map((material) => (
-              <label
-                key={material.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  padding: "0.75rem",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  backgroundColor: materiaisDoQuadro.includes(material.nome)
-                    ? "rgba(72, 187, 120, 0.1)"
-                    : "transparent",
-                  borderColor: materiaisDoQuadro.includes(material.nome)
-                    ? "var(--color-primary)"
-                    : "var(--color-border)",
-                  transition: "all 0.2s",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={materiaisDoQuadro.includes(material.nome)}
-                  onChange={(e) =>
-                    onMaterialChange(material.nome, e.target.checked)
-                  }
-                />
-                <span
-                  style={{ fontSize: "0.81rem", color: "var(--color-text)" }}
+            {materiaisList.map((material) => {
+              const quantidade = materiaisDoQuadro[material.nome] || 0;
+              return (
+                <div
+                  key={material.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.75rem",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "8px",
+                    justifyContent: "space-between",
+                  }}
                 >
-                  {material.nome}
-                </span>
-              </label>
-            ))}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div style={{ width: 6 }} />
+                    <span style={{ fontSize: "0.9rem", color: "var(--color-text)" }}>
+                      {material.nome}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      className="form-control"
+                      style={{ width: 80 }}
+                      value={quantidade}
+                      onChange={(e) =>
+                        onMaterialChange(material.nome, Math.max(0, Number(e.target.value || 0)))
+                      }
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -367,6 +377,23 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
               color: "var(--color-text)",
             }}
           />
+        </div>
+              
+        <div className="form-group">
+          <label htmlFor="acrescimo">Acréscimo / folga (cm)</label>
+          <input
+            type="number"
+            className="form-control"
+            id="acrescimo"
+            value={acrescimo}
+            onChange={(e) => onAcrescimoChange(e.target.value)}
+            placeholder="0"
+            step="0.5"
+            min="0"
+          />
+          <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>
+            Aumenta a área de cálculo (vidro/fundo) sem mudar a medida nominal.
+          </small>
         </div>
 
         <div

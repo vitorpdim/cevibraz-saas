@@ -6,8 +6,8 @@ import App from "./App.tsx";
 import { OrcamentoPage } from "./pages/OrcamentoPage.tsx";
 import { BacklogPage } from "./pages/BacklogPage.tsx";
 import { MaintenancePage } from "./pages/MaintenancePage.tsx";
-// 1. IMPORTAÇÃO NOVA
 import { MoldurasPage } from "./pages/MoldurasPage.tsx";
+import { MateriaisPage } from "./pages/MateriaisPage.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
@@ -30,8 +30,11 @@ const router = createBrowserRouter([
       },
       {
         path: "molduras",
-        // 2. SUBSTITUIÇÃO AQUI: A página real entra em ação
         element: <MoldurasPage />,
+      },
+      {
+        path: "materiais",
+        element: <MateriaisPage />,
       },
       {
         path: "estoque",

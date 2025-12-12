@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
 import type { QuadroNoEstado } from "../types";
 
@@ -11,10 +11,11 @@ interface ResumoPedidoProps {
   onLimparPedido: () => void;
   onSalvarPedido: () => void;
   onDeleteQuadro: (index: number) => void;
-  // Aceita null para resetar
-  onValorFinalManualChange?: (valor: number | null) => void;
+  onValorFinalManualChange?: (valor: number | null) => void;   // aceita null p resetar
   isEditing: boolean;
   isSalvando: boolean;
+  ocultarValoresUnitarios?: boolean;
+  onOcultarValoresUnitariosChange?: (checked: boolean) => void;
 }
 
 export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
@@ -30,9 +31,29 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     onValorFinalManualChange,
     isEditing,
     isSalvando,
+    ocultarValoresUnitarios,
+    onOcultarValoresUnitariosChange,
   } = props;
 
+  const [usarValorFinalNaDescricao, setUsarValorFinalNaDescricao] = useState(false);
+
   const formatarDescricaoQuadro = (quadro: QuadroNoEstado): React.ReactNode => {
+    const totalCalculado = quadros.reduce((acc, q) => acc + q.valorCalculado, 0);
+    // se o user optou por aplicar valor final na desc e existe valor final manual
+    if (usarValorFinalNaDescricao && valorFinalManual !== undefined && valorFinalManual !== null && totalCalculado > 0) {
+      const proporcional = (quadro.valorCalculado / totalCalculado) * (valorFinalManual ?? totalCalculado);
+      return (
+        <div style={{ fontSize: "0.9rem" }}>
+          <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+            Quadro {quadro.altura}cm x {quadro.largura}cm
+          </div>
+          <div>
+            Valor aplicado na descrição: R$ {proporcional.toFixed(2)}
+          </div>
+        </div>
+      );
+    }
+
     if (quadro.detalhesCalculo && quadro.detalhesCalculo.length > 0) {
       return (
         <div style={{ fontSize: "0.9rem" }}>
@@ -154,6 +175,39 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
             min={0}
             step={0.01}
           />
+
+          {/* checkbox pra ocultar preços dos itens no pdf */}
+          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              id="ocultarValores"
+              checked={!!ocultarValoresUnitarios}
+              onChange={(e) => onOcultarValoresUnitariosChange?.(e.target.checked)}
+            />
+            <label htmlFor="ocultarValores" style={{ fontSize: "0.9rem", color: "var(--color-text-secondary)" }}>
+              Ocultar preços dos itens no PDF (recomendado ao arredondar)
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* botão para aplicar valor final na desc */}
+      {onValorFinalManualChange && (
+        <div style={{ marginTop: 8 }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              // só permite aplicar quando existe valor manual
+              if (valorFinalManual === null || valorFinalManual === undefined) {
+                alert("Defina um valor final antes de aplicar na descrição.");
+                return;
+              }
+              setUsarValorFinalNaDescricao((v) => !v);
+            }}
+          >
+            {usarValorFinalNaDescricao ? "Mostrar preços originais" : "Aplicar valor final na descrição"}
+          </button>
         </div>
       )}
 

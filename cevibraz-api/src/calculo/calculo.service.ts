@@ -32,9 +32,11 @@ export class CalculoService {
       altura,
       largura,
       moldurasSelecionadas,
-      materiaisSelecionados,
+      materiaisSelecionados = [],
       espessuraPaspatur,
       limpezaSelecionada,
+      // novo
+      acrescimo_cm = 0,
     } = dto;
 
     // 1 - lista de nomes de materiais p buscar
@@ -63,12 +65,16 @@ export class CalculoService {
       moldurasMap.set(m.codigo.toLowerCase(), m);
     });
 
-    // 1. arredonda medidas
-    const alturaArredondadaQuadro = this.arredondarParaCinco(altura);
-    const larguraArredondadaQuadro = this.arredondarParaCinco(largura);
+    // 1. aplicamos acrescimo às medidas antes de arredondar (folga)
+    const alturaComAcre = altura + (acrescimo_cm || 0);
+    const larguraComAcre = largura + (acrescimo_cm || 0);
+
+    const alturaArredondadaQuadro = this.arredondarParaCinco(alturaComAcre);
+    const larguraArredondadaQuadro = this.arredondarParaCinco(larguraComAcre);
 
     const temPaspatur =
-      materiaisSelecionados.includes('Paspatur') && espessuraPaspatur > 0;
+      materiaisSelecionados.includes('Paspatur') &&
+      (espessuraPaspatur || 0) > 0;
     const espessuraRealPaspatur = Math.max(espessuraPaspatur || 0, 2);
 
     // 2. calcula dimensões
@@ -88,7 +94,12 @@ export class CalculoService {
     const perimetroExterna_m = (alturaExterna_m + larguraExterna_m) * 2;
     const areaExterna_m2 = alturaExterna_m * larguraExterna_m;
 
-    // 3. calcular custos de materiais
+    // registre no detalhe se houve acrescimo
+    if ((acrescimo_cm || 0) > 0) {
+      detalhes.push(`Acréscimo aplicado: +${acrescimo_cm}cm`);
+    }
+
+    // 3. calcular custos de materiais (usa areaExterna_m2 / perimetroInterno_m etc)
     for (const materialNome of materiaisSelecionados) {
       const material = materiaisMap.get(materialNome.toLowerCase());
       if (material) {

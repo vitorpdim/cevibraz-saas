@@ -3,6 +3,7 @@ import {
   Calculator,
   ClipboardList,
   Frame,
+  Layers,
   Package,
   BarChart3,
 } from "lucide-react";
@@ -12,6 +13,7 @@ const menuItems = [
   { path: "/", icon: Calculator, label: "Orçamento" },
   { path: "/backlog", icon: ClipboardList, label: "Backlog" },
   { path: "/molduras", icon: Frame, label: "Cadastro de Molduras" },
+  { path: "/materiais", icon: Layers, label: "Materiais" },
   { path: "/estoque", icon: Package, label: "Estoque" },
   { path: "/dashboard", icon: BarChart3, label: "Dashboard" },
 ];

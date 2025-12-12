@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { IsString, IsNumber, IsOptional, IsArray, IsIn } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsIn,
+  IsBoolean,
+} from 'class-validator';
 
 export class QuadroDto {
   altura: number;
@@ -10,6 +17,8 @@ export class QuadroDto {
   medidaFornecidaCliente: boolean;
   limpezaSelecionada: boolean;
   valorCalculado: number;
+  // NOVO
+  acrescimo_cm?: number;
 }
 
 // DTO p criar um novo pedido
@@ -39,6 +48,11 @@ export class CreatePedidoDto {
   @IsOptional()
   @IsNumber()
   valor_final_manual?: number;
+
+  // NOVO: preference para ocultar preços unitários no PDF
+  @IsOptional()
+  @IsBoolean()
+  ocultar_valores_unitarios?: boolean;
 }
 
 // DTO p atualizar um pedido
@@ -59,6 +73,11 @@ export class UpdatePedidoDto {
   @IsOptional()
   @IsNumber()
   valor_final_manual?: number;
+
+  // NOVO
+  @IsOptional()
+  @IsBoolean()
+  ocultar_valores_unitarios?: boolean;
 }
 
 // DTO p atualizar so o status
@@ -81,6 +100,8 @@ export interface QuadroParaPdf {
   medidaFornecidaCliente: boolean;
   limpezaSelecionada: boolean;
   valorCalculado: number;
+  // NOVO
+  acrescimo_cm?: number;
   molduras: { nome: string; codigo: string }[];
   materiais: { nome: string; espessura_paspatur_cm: number | undefined }[];
   detalhesCalculo: { total: number; detalhes: string[] };
@@ -89,4 +110,17 @@ export interface QuadroParaPdf {
 export interface GrupoQuadro {
   quantidade: number;
   detalhes: QuadroParaPdf;
+}
+
+// Opcional: retorno usado pelo frontend para edição
+export interface PedidoParaEdicao {
+  id: number;
+  atendente: string;
+  clienteNome: string;
+  clienteTelefone: string;
+  observacoes: string;
+  condicao_pagamento?: string;
+  quadros: QuadroDto[];
+  valor_final_salvo: number;
+  ocultar_valores_unitarios?: boolean; // adicionado
 }

@@ -59,6 +59,8 @@ export class PedidosService {
       quadros,
       valor_final_calculado,
       valor_final_manual,
+      // novo
+      ocultar_valores_unitarios,
     } = dto;
 
     const valorFinalParaSalvar = valor_final_manual ?? valor_final_calculado;
@@ -82,6 +84,8 @@ export class PedidosService {
         condicao_pagamento: dto.condicao_pagamento,
         valor_final: valorFinalParaSalvar,
         status: 'A Fazer',
+        // salva preferência
+        ocultar_valores_unitarios: ocultar_valores_unitarios ?? false,
       });
       await manager.save(novoPedido);
 
@@ -119,8 +123,13 @@ export class PedidosService {
   }
 
   async update(id: number, dto: UpdatePedidoDto) {
-    const { observacoes, quadros, valor_final_calculado, valor_final_manual } =
-      dto;
+    const {
+      observacoes,
+      quadros,
+      valor_final_calculado,
+      valor_final_manual,
+      ocultar_valores_unitarios,
+    } = dto;
 
     const valorFinalParaSalvar = valor_final_manual ?? valor_final_calculado;
 
@@ -133,6 +142,7 @@ export class PedidosService {
         throw new NotFoundException('Pedido não encontrado.');
       }
 
+      // remove quadros antigos e salva novos
       await manager.delete(Quadro, { pedido: { id: id } });
       const quadrosParaPdf = await this.salvarQuadrosParaPedido(
         manager,
@@ -142,6 +152,7 @@ export class PedidosService {
 
       pedido.observacoes = observacoes;
       pedido.condicao_pagamento = dto.condicao_pagamento;
+      pedido.ocultar_valores_unitarios = ocultar_valores_unitarios ?? false;
       pedido.valor_final = valorFinalParaSalvar;
 
       this.logger.log(
@@ -246,7 +257,10 @@ export class PedidosService {
       clienteNome: pedido.cliente?.nome || 'Cliente Removido',
       clienteTelefone: pedido.cliente?.telefone || '',
       observacoes: pedido.observacoes,
+      condicao_pagamento: pedido.condicao_pagamento,
       quadros: quadrosParaAppJs,
+      valor_final_salvo: pedido.valor_final,
+      ocultar_valores_unitarios: pedido.ocultar_valores_unitarios ?? false, // adicionado
     };
   }
 
@@ -308,6 +322,8 @@ export class PedidosService {
         pedido: pedido,
         altura_cm: quadroDto.altura,
         largura_cm: quadroDto.largura,
+        // SALV Aacrescimo
+        acrescimo_cm: quadroDto.acrescimo_cm ?? 0,
         medida_fornecida_cliente: quadroDto.medidaFornecidaCliente,
         limpeza_flag: quadroDto.limpezaSelecionada,
       });
@@ -376,6 +392,7 @@ export class PedidosService {
         id: novoQuadro.id,
         altura_cm: novoQuadro.altura_cm,
         largura_cm: novoQuadro.largura_cm,
+        acrescimo_cm: novoQuadro.acrescimo_cm, // incluir pro PDF se necessário
         molduras: moldurasSalvas,
         materiais: materiaisSalvos,
         detalhesCalculo: detalhesCalculo,

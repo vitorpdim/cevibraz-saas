@@ -9,7 +9,7 @@ interface MolduraSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (moldura: Moldura) => void;
-  // Adicionado para saber quais já foram selecionadas (opcional, para UI)
+  // add p saber quais já foram selecionadas (opcional, pra UI)
   moldurasJaSelecionadas?: string[]; 
 }
 
@@ -23,14 +23,12 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
   const [selectedPreview, setSelectedPreview] = useState<Moldura | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Carrega molduras ao abrir
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
       fetchMolduras()
         .then((data) => {
           setMolduras(data);
-          // Seleciona a primeira automaticamente para preview
           if (data.length > 0) setSelectedPreview(data[0]);
         })
         .catch((err) => console.error("Erro ao carregar molduras", err))
@@ -38,7 +36,7 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
     }
   }, [isOpen]);
 
-  // Filtro de busca
+  // filtro de busca
   const filteredMolduras = useMemo(() => {
     const lowerTerm = searchTerm.toLowerCase();
     return molduras.filter(
@@ -53,7 +51,7 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        {/* Cabeçalho */}
+        {/* --- HEADER --- */}
         <div className="modal-header">
           <h2>Selecionar Moldura</h2>
           <button 
@@ -65,7 +63,7 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
         </div>
 
         <div className="moldura-selector-layout">
-          {/* Lado Esquerdo: Preview Visual */}
+          {/* --- LADO ESQUERDO --- */}
           <div className="moldura-preview-section">
             <div className="moldura-preview-card">
               <div className="moldura-preview-image">
@@ -103,7 +101,7 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
             )}
           </div>
 
-          {/* Lado Direito: Lista Pesquisável */}
+          {/* --- LADO DIREITO --- */}
           <div className="moldura-list-section">
             <div style={{ position: 'relative', marginBottom: '1rem' }}>
               <Search 

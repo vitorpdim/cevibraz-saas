@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseIntPipe,
+  Query, // adicionado
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MoldurasService } from './molduras.service';
@@ -40,6 +41,16 @@ export class MoldurasController {
     @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.moldurasService.update(id, updateDto, file);
+  }
+
+  // delete em massa via query ?ids=1,2,3
+  @Delete('batch')
+  removeMany(@Query('ids') ids: string) {
+    const idsArray = (ids || '')
+      .split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !Number.isNaN(n));
+    return this.moldurasService.removeMany(idsArray);
   }
 
   @Delete(':id')

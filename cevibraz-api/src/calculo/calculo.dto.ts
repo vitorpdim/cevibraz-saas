@@ -39,4 +39,9 @@ export class CalcularQuadroDto {
   @Type(() => Boolean)
   @IsBoolean()
   medidaFornecidaCliente: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  acrescimo_cm?: number;
 }

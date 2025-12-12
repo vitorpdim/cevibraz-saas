@@ -103,6 +103,16 @@ export const deleteMoldura = async (id: number): Promise<SimpleApiResponse> => {
   return response.data;
 };
 
+export const deleteMoldurasBatch = async (ids: number[]): Promise<void> => {
+  if (!ids || ids.length === 0) return;
+  const idsString = ids.join(',');
+  await apiClient.delete(`/api/molduras/batch?ids=${encodeURIComponent(idsString)}`);
+};
+
+export const updateMaterial = async (id: number, valor_base: number): Promise<Material> => {
+  const response = await apiClient.put(`/api/materiais/${id}`, { valor_base });
+  return response.data;
+};
 
 export default apiClient;
 

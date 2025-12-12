@@ -11,11 +11,10 @@ import { CalculoController } from './calculo.controller';
   imports: [
     MoldurasModule,
     MateriaisModule,
-    // o TypeOrmModule.forFeature vai aqui
     TypeOrmModule.forFeature([Moldura, Material]),
   ],
   providers: [CalculoService],
-  exports: [CalculoService], // exportar o servico pro PedidosModule usar dps
+  exports: [CalculoService],
   controllers: [CalculoController],
 })
 export class CalculoModule {}
