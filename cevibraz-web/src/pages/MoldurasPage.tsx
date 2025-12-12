@@ -248,18 +248,7 @@ export const MoldurasPage: React.FC = () => {
                     style={{ position: "relative" }}
                   >
                     {/* checkbox REAL */}
-                    <label
-                      style={{
-                        position: "absolute",
-                        top: 10,
-                        left: 10,
-                        zIndex: 10,
-                        cursor: "pointer",
-                        background: "transparent",
-                        borderRadius: 4,
-                        padding: 4,
-                      }}
-                    >
+                    <label className={`select-checkbox ${isSelected ? '' : ''}`} aria-hidden>
                       <input
                         type="checkbox"
                         checked={isSelected}

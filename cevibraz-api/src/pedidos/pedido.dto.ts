@@ -17,7 +17,14 @@ export class QuadroDto {
   medidaFornecidaCliente: boolean;
   limpezaSelecionada: boolean;
   valorCalculado: number;
-  // NOVO
+  acrescimo_cm?: number;
+}
+
+export interface QuadroDtoWithExtras
+  extends Omit<QuadroDto, 'espessuraPaspatur' | 'materiaisSelecionados'> {
+  espessuraPaspatur?: number;
+  materiaisSelecionados: string[];
+  detalhesCalculo?: string[];
   acrescimo_cm?: number;
 }
 
@@ -120,7 +127,8 @@ export interface PedidoParaEdicao {
   clienteTelefone: string;
   observacoes: string;
   condicao_pagamento?: string;
-  quadros: QuadroDto[];
+  // USADO: quadros com extras (detalhes/calculo/acrescimo)
+  quadros: QuadroDtoWithExtras[];
   valor_final_salvo: number;
   ocultar_valores_unitarios?: boolean; // adicionado
 }

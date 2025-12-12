@@ -20,6 +20,7 @@ import {
   UpdatePedidoDto,
   UpdateStatusDto,
   QuadroParaPdf,
+  QuadroDtoWithExtras,
 } from './pedido.dto';
 import { PdfService } from '../pdf/pdf.service';
 
@@ -45,7 +46,7 @@ export class PedidosController {
     try {
       return await this.pedidosService.create(createPedidoDto);
     } catch (error) {
-      this.logger.error('Erro no controller ao criar pedido:', error);
+      this.logger.error('Erro ao criar pedido:', error);
       throw new InternalServerErrorException(this.getErrorMessage(error));
     }
   }
@@ -61,7 +62,7 @@ export class PedidosController {
         pdf_os_filename: p.pdf_os_url ? `os_${p.numero_pedido}.pdf` : null,
       }));
     } catch (error) {
-      this.logger.error('Erro no controller ao buscar pedidos:', error);
+      this.logger.error('Erro ao buscar pedidos:', error);
       throw new InternalServerErrorException(this.getErrorMessage(error));
     }
   }
@@ -74,7 +75,7 @@ export class PedidosController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Erro no controller ao buscar pedido ${id}:`, error);
+      this.logger.error(`Erro ao buscar pedido ${id}:`, error);
       throw new InternalServerErrorException(this.getErrorMessage(error));
     }
   }
@@ -90,7 +91,7 @@ export class PedidosController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Erro no controller ao atualizar pedido ${id}:`, error);
+      this.logger.error(`Erro ao atualizar pedido ${id}:`, error);
       throw new InternalServerErrorException(this.getErrorMessage(error));
     }
   }
@@ -106,10 +107,7 @@ export class PedidosController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(
-        `Erro no controller ao atualizar status do pedido ${id}:`,
-        error,
-      );
+      this.logger.error(`Erro ao atualizar status do pedido ${id}:`, error);
       throw new InternalServerErrorException(this.getErrorMessage(error));
     }
   }
@@ -122,7 +120,7 @@ export class PedidosController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Erro no controller ao deletar pedido ${id}:`, error);
+      this.logger.error(`Erro ao deletar pedido ${id}:`, error);
       throw new InternalServerErrorException(this.getErrorMessage(error));
     }
   }
@@ -145,20 +143,8 @@ export class PedidosController {
         ? parseFloat(valor_editado)
         : pedidoEntity.valor_final;
 
-      const quadrosParaPdf: QuadroParaPdf[] = pedidoFormatado.quadros.map(
-        (q) => ({
-          ...q,
-          id: 0,
-          altura_cm: q.altura,
-          largura_cm: q.largura,
-          molduras: q.moldurasSelecionadas.map((n) => ({ nome: n, codigo: n })),
-          materiais: q.materiaisSelecionados.map((n) => ({
-            nome: n,
-            espessura_paspatur_cm:
-              n.toLowerCase() === 'paspatur' ? q.espessuraPaspatur : undefined,
-          })),
-          detalhesCalculo: { total: q.valorCalculado, detalhes: [] },
-        }),
+      const quadrosParaPdf: QuadroParaPdf[] = this.mapQuadrosToParaPdf(
+        pedidoFormatado.quadros as QuadroDtoWithExtras[],
       );
 
       const pdfBuffer = await this.pdfService.gerarPdfPedidoBuffer(
@@ -177,7 +163,8 @@ export class PedidosController {
     } catch (error: unknown) {
       this.logger.error(
         `Erro ao gerar PDF do Pedido ${id}:`,
-        (error as Error).stack,
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+        error instanceof Error ? error.stack : String(error),
       );
       res.status(500).json({
         message: `Erro ao gerar PDF do Pedido: ${this.getErrorMessage(error)}`,
@@ -195,20 +182,8 @@ export class PedidosController {
         throw new NotFoundException('Pedido não encontrado.');
       }
 
-      const quadrosParaPdf: QuadroParaPdf[] = pedidoFormatado.quadros.map(
-        (q) => ({
-          ...q,
-          id: 0,
-          altura_cm: q.altura,
-          largura_cm: q.largura,
-          molduras: q.moldurasSelecionadas.map((n) => ({ nome: n, codigo: n })),
-          materiais: q.materiaisSelecionados.map((n) => ({
-            nome: n,
-            espessura_paspatur_cm:
-              n.toLowerCase() === 'paspatur' ? q.espessuraPaspatur : undefined,
-          })),
-          detalhesCalculo: { total: q.valorCalculado, detalhes: [] },
-        }),
+      const quadrosParaPdf: QuadroParaPdf[] = this.mapQuadrosToParaPdf(
+        pedidoFormatado.quadros as QuadroDtoWithExtras[],
       );
 
       const pdfBuffer = await this.pdfService.gerarPdfOsBuffer(
@@ -226,11 +201,48 @@ export class PedidosController {
     } catch (error: unknown) {
       this.logger.error(
         `Erro ao gerar PDF da OS ${id}:`,
-        (error as Error).stack,
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+        error instanceof Error ? error.stack : String(error),
       );
       res.status(500).json({
         message: `Erro ao gerar PDF da OS: ${this.getErrorMessage(error)}`,
       });
     }
+  }
+
+  private mapQuadrosToParaPdf(quadros: QuadroDtoWithExtras[]): QuadroParaPdf[] {
+    return quadros.map((q) => {
+      const detalhes = Array.isArray(q.detalhesCalculo)
+        ? q.detalhesCalculo
+        : [];
+      const espessura =
+        typeof q.espessuraPaspatur === 'number' ? q.espessuraPaspatur : 0;
+      const acrescimo = Number(q.acrescimo_cm ?? 0);
+
+      return {
+        id: 0,
+        altura_cm: q.altura,
+        largura_cm: q.largura,
+        molduras: (q.moldurasSelecionadas ?? []).map((n) => ({
+          nome: n,
+          codigo: n,
+        })),
+        materiais: (q.materiaisSelecionados ?? []).map((n) => ({
+          nome: n,
+          espessura_paspatur_cm:
+            n.toLowerCase() === 'paspatur' ? espessura : undefined,
+        })),
+        detalhesCalculo: { total: q.valorCalculado, detalhes },
+        valorCalculado: q.valorCalculado,
+        acrescimo_cm: acrescimo,
+        altura: q.altura,
+        largura: q.largura,
+        moldurasSelecionadas: q.moldurasSelecionadas,
+        materiaisSelecionados: q.materiaisSelecionados,
+        espessuraPaspatur: espessura,
+        limpezaSelecionada: q.limpezaSelecionada,
+        medidaFornecidaCliente: q.medidaFornecidaCliente,
+      };
+    });
   }
 }

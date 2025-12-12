@@ -227,18 +227,23 @@ export class PedidosService {
           (qm) => qm.material?.nome.toLowerCase() === 'paspatur',
         );
 
+        const acrescimoNum = Number(q.acrescimo_cm ?? 0);
+
         const dtoSimulado: CalcularQuadroDto = {
-          altura: q.altura_cm,
-          largura: q.largura_cm,
-          medidaFornecidaCliente: q.medida_fornecida_cliente,
-          limpezaSelecionada: q.limpeza_flag,
+          altura: Number(q.altura_cm),
+          largura: Number(q.largura_cm),
+          medidaFornecidaCliente: Boolean(q.medida_fornecida_cliente),
+          limpezaSelecionada: Boolean(q.limpeza_flag),
           moldurasSelecionadas: q.quadroMolduras.map(
             (qm) => qm.moldura?.nome || 'Moldura Removida',
           ),
           materiaisSelecionados: q.quadroMateriais.map(
             (qm) => qm.material?.nome || 'Material Removido',
           ),
-          espessuraPaspatur: paspatur?.espessura_paspatur_cm || 0,
+          espessuraPaspatur: paspatur?.espessura_paspatur_cm
+            ? Number(paspatur.espessura_paspatur_cm)
+            : 0,
+          acrescimo_cm: acrescimoNum,
         };
 
         const calculo =
@@ -248,6 +253,8 @@ export class PedidosService {
           ...dtoSimulado,
           espessuraPaspatur: dtoSimulado.espessuraPaspatur,
           valorCalculado: calculo.total,
+          detalhesCalculo: calculo.detalhes,
+          acrescimo_cm: dtoSimulado.acrescimo_cm ?? 0,
         };
       }),
     );
@@ -260,7 +267,7 @@ export class PedidosService {
       condicao_pagamento: pedido.condicao_pagamento,
       quadros: quadrosParaAppJs,
       valor_final_salvo: pedido.valor_final,
-      ocultar_valores_unitarios: pedido.ocultar_valores_unitarios ?? false, // adicionado
+      ocultar_valores_unitarios: pedido.ocultar_valores_unitarios ?? false,
     };
   }
 
@@ -322,7 +329,6 @@ export class PedidosService {
         pedido: pedido,
         altura_cm: quadroDto.altura,
         largura_cm: quadroDto.largura,
-        // SALV Aacrescimo
         acrescimo_cm: quadroDto.acrescimo_cm ?? 0,
         medida_fornecida_cliente: quadroDto.medidaFornecidaCliente,
         limpeza_flag: quadroDto.limpezaSelecionada,
@@ -384,7 +390,14 @@ export class PedidosService {
       await Promise.all(qmPromises);
 
       const detalhesCalculo = await this.calculoService.calcularPrecoQuadro({
-        ...quadroDto,
+        altura: quadroDto.altura,
+        largura: quadroDto.largura,
+        medidaFornecidaCliente: quadroDto.medidaFornecidaCliente,
+        limpezaSelecionada: quadroDto.limpezaSelecionada,
+        moldurasSelecionadas: quadroDto.moldurasSelecionadas,
+        materiaisSelecionados: quadroDto.materiaisSelecionados,
+        espessuraPaspatur: quadroDto.espessuraPaspatur,
+        acrescimo_cm: quadroDto.acrescimo_cm ?? 0,
       });
 
       quadrosParaPdf.push({
@@ -392,7 +405,7 @@ export class PedidosService {
         id: novoQuadro.id,
         altura_cm: novoQuadro.altura_cm,
         largura_cm: novoQuadro.largura_cm,
-        acrescimo_cm: novoQuadro.acrescimo_cm, // incluir pro PDF se necessário
+        acrescimo_cm: novoQuadro.acrescimo_cm,
         molduras: moldurasSalvas,
         materiais: materiaisSalvos,
         detalhesCalculo: detalhesCalculo,
