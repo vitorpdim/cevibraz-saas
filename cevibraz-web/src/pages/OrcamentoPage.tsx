@@ -325,13 +325,19 @@ export function OrcamentoPage() {
 
     setIsSalvando(true);
 
+    // { changed code } - garante que os quadros têm o valorCalculado atualizado
+    const quadrosParaSalvar = quadrosDoPedido.map(q => ({
+      ...q,
+      valorCalculado: q.valorCalculado,
+    }));
+
     const dadosBase = {
       observacoes: observacoes,
       condicao_pagamento: condicaoPagamento,
-      quadros: quadrosDoPedido,
+      quadros: quadrosParaSalvar,
       valor_final_calculado: valorTotalPedido,
       valor_final_manual: valorFinalManual ?? undefined,
-      ocultar_valores_unitarios: ocultarValoresUnitarios, // envia a preferência
+      ocultar_valores_unitarios: ocultarValoresUnitarios,
     };
 
     try {

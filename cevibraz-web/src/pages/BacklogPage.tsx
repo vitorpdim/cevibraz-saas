@@ -129,59 +129,67 @@ export const BacklogPage: React.FC = () => {
       );
     }
 
-    return lista.map((pedido) => (
-      <tr key={pedido.id}>
-        <td>{pedido.cliente_nome}</td>
-        <td>{pedido.numero_pedido}</td>
-        <td>{new Date(pedido.data_criacao).toLocaleDateString("pt-BR")}</td>
-        <td>R$ {parseFloat(pedido.valor_final.toString()).toFixed(2)}</td>
-        <td className="action-cell">
-          {pedido.pdf_filename && (
-            <button
-              className="btn-pdf"
-              onClick={() =>
-                handleDownloadPDF(pedido.id, "pdf", pedido.pdf_filename)
-              }
+    return lista.map((pedido) => {
+      // { changed code } - garante que valor_final é number antes de .toFixed()
+      const valorFinal =
+        typeof pedido.valor_final === "string"
+          ? parseFloat(pedido.valor_final)
+          : pedido.valor_final;
+
+      return (
+        <tr key={pedido.id}>
+          <td>{pedido.cliente_nome}</td>
+          <td>{pedido.numero_pedido}</td>
+          <td>{new Date(pedido.data_criacao).toLocaleDateString("pt-BR")}</td>
+          <td>R$ {valorFinal.toFixed(2)}</td>
+          <td className="action-cell">
+            {pedido.pdf_filename && (
+              <button
+                className="btn-pdf"
+                onClick={() =>
+                  handleDownloadPDF(pedido.id, "pdf", pedido.pdf_filename)
+                }
+              >
+                Pedido PDF
+              </button>
+            )}
+            {pedido.pdf_os_filename && (
+              <button
+                className="btn-os"
+                onClick={() =>
+                  handleDownloadPDF(pedido.id, "os", pedido.pdf_os_filename)
+                }
+              >
+                OS PDF
+              </button>
+            )}
+          </td>
+          <td className="action-cell">
+            {statusAtual !== "entregue" && (
+              <button
+                className="btn-avancar"
+                onClick={() => handleMudarStatus(pedido.id, statusAtual)}
+              >
+                Avançar
+              </button>
+            )}
+            <Link
+              to={`/orcamento/${pedido.id}`}
+              className="btn btn-success"
+              style={{ marginRight: 8 }}
             >
-              Pedido PDF
-            </button>
-          )}
-          {pedido.pdf_os_filename && (
+              Editar
+            </Link>
             <button
-              className="btn-os"
-              onClick={() =>
-                handleDownloadPDF(pedido.id, "os", pedido.pdf_os_filename)
-              }
+              className="btn-delete"
+              onClick={() => handleDelete(pedido.id, pedido.numero_pedido)}
             >
-              OS PDF
+              Excluir
             </button>
-          )}
-        </td>
-        <td className="action-cell">
-          {statusAtual !== "entregue" && (
-            <button
-              className="btn-avancar"
-              onClick={() => handleMudarStatus(pedido.id, statusAtual)}
-            >
-              Avançar
-            </button>
-          )}
-          <Link
-            to={`/orcamento/${pedido.id}`}
-            className="btn btn-success"
-            style={{ marginRight: 8 }}
-          >
-            Editar
-          </Link>
-          <button
-            className="btn-delete"
-            onClick={() => handleDelete(pedido.id, pedido.numero_pedido)}
-          >
-            Excluir
-          </button>
-        </td>
-      </tr>
-    ));
+          </td>
+        </tr>
+      );
+    });
   };
 
   return (
