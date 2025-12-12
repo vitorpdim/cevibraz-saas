@@ -11,7 +11,8 @@ interface ResumoPedidoProps {
   onLimparPedido: () => void;
   onSalvarPedido: () => void;
   onDeleteQuadro: (index: number) => void;
-  onValorFinalManualChange?: (valor: number | null) => void;   // aceita null p resetar
+  onValorFinalManualChange?: (valor: number | null) => void;
+  onQuadrosChange?: (quadros: QuadroNoEstado[]) => void;
   isEditing: boolean;
   isSalvando: boolean;
   ocultarValoresUnitarios?: boolean;
@@ -29,65 +30,41 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     onSalvarPedido,
     onDeleteQuadro,
     onValorFinalManualChange,
+    onQuadrosChange,
     isEditing,
     isSalvando,
     ocultarValoresUnitarios,
     onOcultarValoresUnitariosChange,
   } = props;
 
-  const [usarValorFinalNaDescricao, setUsarValorFinalNaDescricao] = useState(false);
+  const [aplicarValorFinal, setAplicarValorFinal] = useState(false);
 
-  const formatarDescricaoQuadro = (quadro: QuadroNoEstado): React.ReactNode => {
+  const calcularValorProporcional = (quadro: QuadroNoEstado): number => {
+    if (!aplicarValorFinal || valorFinalManual === undefined || valorFinalManual === null) {
+      return quadro.valorCalculado;
+    }
+
     const totalCalculado = quadros.reduce((acc, q) => acc + q.valorCalculado, 0);
-    // se o user optou por aplicar valor final na desc e existe valor final manual
-    if (usarValorFinalNaDescricao && valorFinalManual !== undefined && valorFinalManual !== null && totalCalculado > 0) {
-      const proporcional = (quadro.valorCalculado / totalCalculado) * (valorFinalManual ?? totalCalculado);
-      return (
-        <div style={{ fontSize: "0.9rem" }}>
-          <div style={{ fontWeight: 600, marginBottom: "4px" }}>
-            Quadro {quadro.altura}cm x {quadro.largura}cm
-          </div>
-          <div>
-            Valor aplicado na descrição: R$ {proporcional.toFixed(2)}
-          </div>
-        </div>
-      );
-    }
+    if (totalCalculado === 0) return 0;
 
-    if (quadro.detalhesCalculo && quadro.detalhesCalculo.length > 0) {
-      return (
-        <div style={{ fontSize: "0.9rem" }}>
-          <div style={{ fontWeight: 600, marginBottom: "4px" }}>
-            Quadro {quadro.altura}cm x {quadro.largura}cm
-          </div>
-          <ul
-            style={{
-              paddingLeft: "20px",
-              margin: 0,
-              color: "var(--color-text-secondary)",
-              fontSize: "0.85rem",
-            }}
-          >
-            {quadro.detalhesCalculo.map((detalhe, idx) => (
-              <li key={idx}>{detalhe}</li>
-            ))}
-          </ul>
-        </div>
-      );
-    }
+    return (quadro.valorCalculado / totalCalculado) * valorFinalManual;
+  };
 
-    let desc = `${quadro.altura}cm x ${quadro.largura}cm. `;
-    if (quadro.moldurasSelecionadas.length > 0) {
-      desc += `Molduras: ${quadro.moldurasSelecionadas.join(", ")}. `;
-    }
-    if (quadro.materiaisSelecionados.length > 0) {
-      desc += `Materiais: ${quadro.materiaisSelecionados.join(", ")}. `;
-    }
-    if (quadro.espessuraPaspatur > 0) {
-      desc += ` Paspatur: ${quadro.espessuraPaspatur}cm.`;
-    }
+  const handleAplicarValorFinal = () => {
+    const novoEstado = !aplicarValorFinal;
+    setAplicarValorFinal(novoEstado);
 
-    return <span>{desc}</span>;
+    if (novoEstado && valorFinalManual !== undefined && valorFinalManual !== null) {
+      // proporcionaliza valores em cada quadro
+      const quadrosAtualizados = quadros.map((q) => ({
+        ...q,
+        valorCalculado: calcularValorProporcional(q),
+      }));
+      onQuadrosChange?.(quadrosAtualizados);
+    } else if (!novoEstado) {
+      // volta aos valores originais (recarregar do estado ou manter?)
+      // Por enquanto, mantemos como está
+    }
   };
 
   const handleManualValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,6 +72,7 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
       const valorStr = e.target.value;
       if (valorStr === "") {
         onValorFinalManualChange(null);
+        setAplicarValorFinal(false);
         return;
       }
       const valorNum = parseFloat(valorStr);
@@ -116,30 +94,36 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
           <p className="empty-state">Nenhum quadro adicionado ainda.</p>
         ) : (
           <ul className="quadros-list">
-            {quadros.map((quadro, index) => (
-              <li
-                key={quadro.id}
-                className="quadro-item"
-                style={{ alignItems: "flex-start" }}
-              >
-                <div className="quadro-info">
-                  <span className="quadro-desc">
-                    {formatarDescricaoQuadro(quadro)}
-                  </span>
-                  <span className="quadro-valor" style={{ marginTop: "8px" }}>
-                    Total: R$ {quadro.valorCalculado.toFixed(2)}
-                  </span>
-                </div>
-                <button
-                  className="btn-icon-danger"
-                  onClick={() => onDeleteQuadro(index)}
-                  aria-label="Excluir quadro"
-                  style={{ marginTop: "4px" }}
+            {quadros.map((quadro, index) => {
+              const valorExibido = aplicarValorFinal 
+                ? calcularValorProporcional(quadro) 
+                : quadro.valorCalculado;
+              
+              return (
+                <li
+                  key={quadro.id}
+                  className="quadro-item"
+                  style={{ alignItems: "flex-start" }}
                 >
-                  <Trash2 size={16} />
-                </button>
-              </li>
-            ))}
+                  <div className="quadro-info">
+                    <span className="quadro-desc">
+                      Quadro {quadro.altura}cm x {quadro.largura}cm
+                    </span>
+                    <span className="quadro-valor" style={{ marginTop: "8px" }}>
+                      Total: R$ {valorExibido.toFixed(2)}
+                    </span>
+                  </div>
+                  <button
+                    className="btn-icon-danger"
+                    onClick={() => onDeleteQuadro(index)}
+                    aria-label="Excluir quadro"
+                    style={{ marginTop: "4px" }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -176,7 +160,6 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
             step={0.01}
           />
 
-          {/* checkbox pra ocultar preços dos itens no pdf */}
           <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
             <input
               type="checkbox"
@@ -185,28 +168,23 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
               onChange={(e) => onOcultarValoresUnitariosChange?.(e.target.checked)}
             />
             <label htmlFor="ocultarValores" style={{ fontSize: "0.9rem", color: "var(--color-text-secondary)" }}>
-              Ocultar preços dos itens no PDF (recomendado ao arredondar)
+              Ocultar preços dos itens no PDF
             </label>
           </div>
         </div>
       )}
 
-      {/* botão para aplicar valor final na desc */}
       {onValorFinalManualChange && (
         <div style={{ marginTop: 8 }}>
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => {
-              // só permite aplicar quando existe valor manual
-              if (valorFinalManual === null || valorFinalManual === undefined) {
-                alert("Defina um valor final antes de aplicar na descrição.");
-                return;
-              }
-              setUsarValorFinalNaDescricao((v) => !v);
-            }}
+            onClick={handleAplicarValorFinal}
+            disabled={valorFinalManual === null || valorFinalManual === undefined}
           >
-            {usarValorFinalNaDescricao ? "Mostrar preços originais" : "Aplicar valor final na descrição"}
+            {aplicarValorFinal 
+              ? "Voltar aos valores originais" 
+              : "Aplicar valor final na descrição"}
           </button>
         </div>
       )}

@@ -358,12 +358,12 @@ export class PdfService implements OnModuleInit {
     doc.font('Helvetica').fontSize(8);
 
     grupos.forEach((grupo, index) => {
-      // agora passamos a flag ao formatar descrição
       const desc = this.formatarDescricaoQuadro(
         grupo.detalhes,
         true,
         ocultarPrecosIndividuais,
       );
+      // AGORA usa o valorCalculado já proporcionalizado
       const valorUnit = parseFloat(String(grupo.detalhes.valorCalculado || 0));
       const valorTotalGrupo = valorUnit * grupo.quantidade;
 
