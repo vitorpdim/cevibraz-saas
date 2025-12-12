@@ -363,11 +363,9 @@ export class PdfService implements OnModuleInit {
         true,
         ocultarPrecosIndividuais,
       );
-      // AGORA usa o valorCalculado já proporcionalizado
       const valorUnit = parseFloat(String(grupo.detalhes.valorCalculado || 0));
       const valorTotalGrupo = valorUnit * grupo.quantidade;
 
-      // Calcula altura com base na descrição, garantindo mínimo
       const descHeight = doc.heightOfString(desc, { width: colWidths[2] - 10 });
       const currentLineHeight = Math.max(40, descHeight + 15);
 
@@ -375,7 +373,6 @@ export class PdfService implements OnModuleInit {
         doc.addPage();
         yAtual = MARGEM_TOPO;
 
-        // Redesenha Header na nova página
         doc.font('Helvetica-Bold').fontSize(8);
         doc
           .rect(colPositions[0], yAtual, LARGURA_CONTEUDO, 20)
@@ -408,7 +405,6 @@ export class PdfService implements OnModuleInit {
 
       const yCell = yAtual + 7;
 
-      // Conteúdo da linha
       doc.text((index + 1).toString(), colPositions[0] + 5, yCell, {
         width: colWidths[0] - 10,
         align: 'center',
@@ -425,12 +421,16 @@ export class PdfService implements OnModuleInit {
         width: colWidths[3] - 10,
         align: 'center',
       });
-      doc.text(valorTotalGrupo.toFixed(2), colPositions[4] + 5, yCell, {
+
+      // { changed code } - Oculta valores individuais quando flag está ativa
+      const textoValor = ocultarPrecosIndividuais
+        ? '---'
+        : valorTotalGrupo.toFixed(2);
+      doc.text(textoValor, colPositions[4] + 5, yCell, {
         width: colWidths[4] - 10,
         align: 'right',
       });
 
-      // Bordas da linha
       doc.strokeColor('#ccc');
       for (let i = 0; i <= colWidths.length; i++) {
         doc

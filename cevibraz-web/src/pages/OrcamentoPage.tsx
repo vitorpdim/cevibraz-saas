@@ -270,7 +270,8 @@ export function OrcamentoPage() {
         setValorTotalPedido(valorCalculado);
 
         if (pedido.valor_final_salvo !== valorCalculado) {
-          setValorFinalManual(pedido.valor_final_salvo);
+          // { changed code } - Conversão forçada com Number() para evitar crash toFixed
+          setValorFinalManual(pedido.valor_final_salvo ? Number(pedido.valor_final_salvo) : null);
         } else {
           setValorFinalManual(null);
         }
