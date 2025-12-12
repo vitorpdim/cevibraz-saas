@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Trash2 } from "lucide-react";
 import type { QuadroNoEstado } from "../types";
 
@@ -12,7 +12,6 @@ interface ResumoPedidoProps {
   onSalvarPedido: () => void;
   onDeleteQuadro: (index: number) => void;
   onValorFinalManualChange?: (valor: number | null) => void;
-  onQuadrosChange?: (quadros: QuadroNoEstado[]) => void;
   isEditing: boolean;
   isSalvando: boolean;
   ocultarValoresUnitarios?: boolean;
@@ -30,41 +29,47 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     onSalvarPedido,
     onDeleteQuadro,
     onValorFinalManualChange,
-    onQuadrosChange,
     isEditing,
     isSalvando,
     ocultarValoresUnitarios,
     onOcultarValoresUnitariosChange,
   } = props;
 
-  const [aplicarValorFinal, setAplicarValorFinal] = useState(false);
-
-  const calcularValorProporcional = (quadro: QuadroNoEstado): number => {
-    if (!aplicarValorFinal || valorFinalManual === undefined || valorFinalManual === null) {
-      return quadro.valorCalculado;
+  const formatarDescricaoQuadro = (quadro: QuadroNoEstado): React.ReactNode => {
+    if (quadro.detalhesCalculo && quadro.detalhesCalculo.length > 0) {
+      return (
+        <div style={{ fontSize: "0.9rem" }}>
+          <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+            Quadro {quadro.altura}cm x {quadro.largura}cm
+          </div>
+          <ul
+            style={{
+              paddingLeft: "20px",
+              margin: 0,
+              color: "var(--color-text-secondary)",
+              fontSize: "0.85rem",
+            }}
+          >
+            {quadro.detalhesCalculo.map((detalhe, idx) => (
+              <li key={idx}>{detalhe}</li>
+            ))}
+          </ul>
+        </div>
+      );
     }
 
-    const totalCalculado = quadros.reduce((acc, q) => acc + q.valorCalculado, 0);
-    if (totalCalculado === 0) return 0;
-
-    return (quadro.valorCalculado / totalCalculado) * valorFinalManual;
-  };
-
-  const handleAplicarValorFinal = () => {
-    const novoEstado = !aplicarValorFinal;
-    setAplicarValorFinal(novoEstado);
-
-    if (novoEstado && valorFinalManual !== undefined && valorFinalManual !== null) {
-      // proporcionaliza valores em cada quadro
-      const quadrosAtualizados = quadros.map((q) => ({
-        ...q,
-        valorCalculado: calcularValorProporcional(q),
-      }));
-      onQuadrosChange?.(quadrosAtualizados);
-    } else if (!novoEstado) {
-      // volta aos valores originais (recarregar do estado ou manter?)
-      // Por enquanto, mantemos como está
+    let desc = `${quadro.altura}cm x ${quadro.largura}cm. `;
+    if (quadro.moldurasSelecionadas.length > 0) {
+      desc += `Molduras: ${quadro.moldurasSelecionadas.join(", ")}. `;
     }
+    if (quadro.materiaisSelecionados.length > 0) {
+      desc += `Materiais: ${quadro.materiaisSelecionados.join(", ")}. `;
+    }
+    if (quadro.espessuraPaspatur > 0) {
+      desc += ` Paspatur: ${quadro.espessuraPaspatur}cm.`;
+    }
+
+    return <span>{desc}</span>;
   };
 
   const handleManualValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,7 +77,6 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
       const valorStr = e.target.value;
       if (valorStr === "") {
         onValorFinalManualChange(null);
-        setAplicarValorFinal(false);
         return;
       }
       const valorNum = parseFloat(valorStr);
@@ -94,36 +98,30 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
           <p className="empty-state">Nenhum quadro adicionado ainda.</p>
         ) : (
           <ul className="quadros-list">
-            {quadros.map((quadro, index) => {
-              const valorExibido = aplicarValorFinal 
-                ? calcularValorProporcional(quadro) 
-                : quadro.valorCalculado;
-              
-              return (
-                <li
-                  key={quadro.id}
-                  className="quadro-item"
-                  style={{ alignItems: "flex-start" }}
+            {quadros.map((quadro, index) => (
+              <li
+                key={quadro.id}
+                className="quadro-item"
+                style={{ alignItems: "flex-start" }}
+              >
+                <div className="quadro-info">
+                  <span className="quadro-desc">
+                    {formatarDescricaoQuadro(quadro)}
+                  </span>
+                  <span className="quadro-valor" style={{ marginTop: "8px" }}>
+                    Total: R$ {quadro.valorCalculado.toFixed(2)}
+                  </span>
+                </div>
+                <button
+                  className="btn-icon-danger"
+                  onClick={() => onDeleteQuadro(index)}
+                  aria-label="Excluir quadro"
+                  style={{ marginTop: "4px" }}
                 >
-                  <div className="quadro-info">
-                    <span className="quadro-desc">
-                      Quadro {quadro.altura}cm x {quadro.largura}cm
-                    </span>
-                    <span className="quadro-valor" style={{ marginTop: "8px" }}>
-                      Total: R$ {valorExibido.toFixed(2)}
-                    </span>
-                  </div>
-                  <button
-                    className="btn-icon-danger"
-                    onClick={() => onDeleteQuadro(index)}
-                    aria-label="Excluir quadro"
-                    style={{ marginTop: "4px" }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </li>
-              );
-            })}
+                  <Trash2 size={16} />
+                </button>
+              </li>
+            ))}
           </ul>
         )}
       </div>
@@ -171,21 +169,6 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
               Ocultar preços dos itens no PDF
             </label>
           </div>
-        </div>
-      )}
-
-      {onValorFinalManualChange && (
-        <div style={{ marginTop: 8 }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={handleAplicarValorFinal}
-            disabled={valorFinalManual === null || valorFinalManual === undefined}
-          >
-            {aplicarValorFinal 
-              ? "Voltar aos valores originais" 
-              : "Aplicar valor final na descrição"}
-          </button>
         </div>
       )}
 

@@ -489,7 +489,6 @@ export function OrcamentoPage() {
           onSalvarPedido={handleSalvarPedido}
           onDeleteQuadro={handleDeleteQuadro}
           onValorFinalManualChange={setValorFinalManual}
-          onQuadrosChange={setQuadrosDoPedido}
           isEditing={isEditing}
           isSalvando={isSalvando}
           ocultarValoresUnitarios={ocultarValoresUnitarios}
