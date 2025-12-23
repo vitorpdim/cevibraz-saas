@@ -38,7 +38,7 @@ export const MoldurasPage: React.FC = () => {
       setError(null);
       const data = await fetchMolduras();
       setMolduras(data);
-      setSelectedIds([]); // Limpa seleção ao recarregar
+      setSelectedIds([]);
     } catch (err) {
       console.error("Erro:", err);
       setError("Falha ao carregar molduras.");
@@ -146,7 +146,6 @@ export const MoldurasPage: React.FC = () => {
   return (
     <div className="page-content">
       <div className="container">
-        {/* Header Inteligente */}
         <div
           className="page-header"
           style={{
@@ -170,7 +169,7 @@ export const MoldurasPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Busca e Select All */}
+        {/* busca e select all */}
         <div
           className="search-section"
           style={{
@@ -247,7 +246,7 @@ export const MoldurasPage: React.FC = () => {
                     className="moldura-image"
                     style={{ position: "relative" }}
                   >
-                    {/* checkbox REAL */}
+                    {/* checkbox REAL MEMO*/}
                     <label className={`select-checkbox ${isSelected ? '' : ''}`} aria-hidden>
                       <input
                         type="checkbox"

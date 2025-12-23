@@ -139,7 +139,6 @@ export class PdfService implements OnModuleInit {
 
     this.desenharHeaderPedido(doc);
     let y = this.desenharInfoClientePedido(doc, pedidoData, 180);
-    // PASSA A FLAG do pedido para controlar exibição de preços
     y = this.desenharTabelaQuadrosPedido(
       doc,
       grupos,
@@ -288,12 +287,10 @@ export class PdfService implements OnModuleInit {
 
     doc.font('Helvetica-Bold').fontSize(9);
     doc.text('CLIENTE:', MARGEM_ESQUERDA, y);
-    // Ajuste no X do telefone para alinhar melhor
     const xTelefone = MARGEM_ESQUERDA + LARGURA_CONTEUDO * 0.65;
     doc.text('TELEFONE:', xTelefone, y);
 
     doc.font('Helvetica').fontSize(10);
-    // Limita a largura do nome do cliente para não invadir o telefone
     doc.text(pedido.cliente?.nome || 'N/A', MARGEM_ESQUERDA, y + 12, {
       width: LARGURA_CONTEUDO * 0.6,
       lineBreak: false,
@@ -318,7 +315,6 @@ export class PdfService implements OnModuleInit {
     ocultarPrecosIndividuais: boolean,
   ): number {
     const tableTop = y + 20;
-    // Ajuste nas larguras para dar mais espaço à descrição
     const colWidths = [30, 80, 248, 40, 70];
     const colPositions = [MARGEM_ESQUERDA];
     colWidths.reduce((acc, width) => {
@@ -332,7 +328,6 @@ export class PdfService implements OnModuleInit {
       .fillAndStroke('#f2f2f2', '#000');
     doc.fillColor('#000');
 
-    // Alinhamentos centralizados para cabeçalhos
     doc.text('Item', colPositions[0] + 5, tableTop + 7, {
       width: colWidths[0] - 10,
       align: 'center',
@@ -422,7 +417,6 @@ export class PdfService implements OnModuleInit {
         align: 'center',
       });
 
-      // { changed code } - Oculta valores individuais quando flag está ativa
       const textoValor = ocultarPrecosIndividuais
         ? '---'
         : valorTotalGrupo.toFixed(2);
@@ -487,10 +481,9 @@ export class PdfService implements OnModuleInit {
     doc.font('Helvetica');
     doc.text(
       pedido.condicao_pagamento || '',
-      MARGEM_ESQUERDA + 5 + larguraLabel + 5, // 5pt de margem
+      MARGEM_ESQUERDA + 5 + larguraLabel + 5,
       yAtualEsquerda,
       {
-        // Garante que se for muito longo, quebra linha dentro da caixa
         width: colEsquerdaWidth - (5 + larguraLabel + 5) - 5,
       },
     );
@@ -506,7 +499,6 @@ export class PdfService implements OnModuleInit {
       width: colEsquerdaWidth - 10,
     });
 
-    // Caixa Direita
     doc.rect(xDireita, y, colDireitaWidth, alturaCaixa).stroke();
 
     let yAtualDireita = y + 15;
@@ -719,7 +711,7 @@ export class PdfService implements OnModuleInit {
       return listaDesc[0] + '\n' + detalhesCompletos.join('\n');
     }
 
-    // Se for p ocultar os preços, monta so os nomes
+    // se for p ocultar os preços, monta so os nomes
     const listaItens: string[] = [];
 
     if (quadro.molduras && quadro.molduras.length > 0) {

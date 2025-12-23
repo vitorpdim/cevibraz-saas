@@ -21,7 +21,7 @@ export interface CalcularQuadroDto {
   espessuraPaspatur: number;
   limpezaSelecionada: boolean;
   medidaFornecidaCliente: boolean;
-  acrescimo_cm?: number; // novo
+  acrescimo_cm?: number;
 }
 
 export interface CalculoResponse {
@@ -40,7 +40,7 @@ export interface QuadroNoEstado {
   limpezaSelecionada: boolean;
   valorCalculado: number;
   detalhesCalculo?: string[];
-  acrescimo_cm?: number; // novo
+  acrescimo_cm?: number;
 }
 
 // p criar/atualizar pedido envia p api
@@ -53,7 +53,7 @@ export interface PedidoApiDto {
   quadros: QuadroNoEstado[];
   valor_final_calculado: number;
   valor_final_manual?: number;
-  ocultar_valores_unitarios?: boolean; // novo
+  ocultar_valores_unitarios?: boolean;
 }
 
 // resposta em salvar pedido
@@ -91,7 +91,7 @@ export interface PedidoParaEdicao {
   condicao_pagamento?: string;
   quadros: QuadroNoEstado[];
   valor_final_salvo: number;
-  ocultar_valores_unitarios?: boolean; // novo
+  ocultar_valores_unitarios?: boolean;
 }
 
 export interface SimpleApiResponse {
@@ -127,5 +127,5 @@ export interface PedidoUpdateDto {
   quadros: QuadroNoEstado[];
   valor_final_calculado: number;
   valor_final_manual?: number;
-  ocultar_valores_unitarios?: boolean; // novo
+  ocultar_valores_unitarios?: boolean;
 }

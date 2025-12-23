@@ -18,6 +18,12 @@ export class Moldura {
   @Column({ type: 'text', nullable: true })
   imagem_url: string;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  estoque_atual: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 10 })
+  estoque_minimo: number;
+
   @OneToMany(() => QuadroMoldura, (quadroMoldura) => quadroMoldura.moldura)
   quadroMolduras: QuadroMoldura[];
 }

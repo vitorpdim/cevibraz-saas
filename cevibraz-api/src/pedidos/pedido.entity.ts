@@ -28,7 +28,7 @@ export class Pedido {
     length: 20,
     default: 'A Fazer',
   })
-  status: string; // a Fazer, já Feito, entregue
+  status: string; // a fazer, já feito, entregue
 
   @Column({ type: 'text', nullable: true })
   observacoes: string;
@@ -39,14 +39,12 @@ export class Pedido {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor_final: number;
 
-  // --- campos novos urls ---
   @Column({ type: 'text', nullable: true })
   pdf_pedido_url: string;
 
   @Column({ type: 'text', nullable: true })
   pdf_os_url: string;
 
-  // NOVO: flag p ocultar/preferência de exibir preços unitários no pdf
   @Column({ type: 'boolean', default: false })
   ocultar_valores_unitarios: boolean;
 

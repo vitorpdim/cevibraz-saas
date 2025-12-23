@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm'; // add In
+import { Repository, In } from 'typeorm';
 import { Moldura } from './moldura.entity';
 import { CreateMolduraDto, UpdateMolduraDto } from './moldura.dto';
 import { unlink } from 'fs/promises';
@@ -86,7 +86,7 @@ export class MoldurasService {
     return { message: 'Moldura deletada com sucesso' };
   }
 
-  // remover várias molduras por id (apaga tb arquivos)
+  // remover várias molduras por id (apaga arquivos tb)
   async removeMany(ids: number[]): Promise<{ message: string }> {
     if (!ids || ids.length === 0) {
       return { message: 'Nenhum id fornecido' };

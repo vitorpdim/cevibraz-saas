@@ -130,7 +130,6 @@ export const BacklogPage: React.FC = () => {
     }
 
     return lista.map((pedido) => {
-      // { changed code } - garante que valor_final é number antes de .toFixed()
       const valorFinal =
         typeof pedido.valor_final === "string"
           ? parseFloat(pedido.valor_final)

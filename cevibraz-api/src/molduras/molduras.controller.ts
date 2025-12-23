@@ -9,7 +9,7 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseIntPipe,
-  Query, // adicionado
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MoldurasService } from './molduras.service';

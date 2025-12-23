@@ -18,6 +18,15 @@ export class Material {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor_base: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  estoque_atual: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 5 })
+  estoque_minimo: number;
+
+  @Column({ type: 'varchar', length: 10, default: 'un' })
+  unidade: string;
+
   @OneToMany(() => QuadroMaterial, (quadroMaterial) => quadroMaterial.material)
   quadroMateriais: QuadroMaterial[];
 }

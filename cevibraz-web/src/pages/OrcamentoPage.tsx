@@ -126,14 +126,7 @@ export function OrcamentoPage() {
       }
       return { ...prevState, resumoDoQuadro: resumo };
     });
-  }, [
-    formQuadro.altura,
-    formQuadro.largura,
-    formQuadro.moldurasDoQuadro,
-    formQuadro.materiaisDoQuadro,
-    formQuadro.espessuraPaspatur,
-    formQuadro.isPaspaturVisivel,
-  ]);
+  }, [formQuadro.altura, formQuadro.largura, formQuadro.moldurasDoQuadro, formQuadro.materiaisDoQuadro, formQuadro.espessuraPaspatur, formQuadro.isPaspaturVisivel, formQuadro]);
 
   const handleAddMoldura = () => {
     if (
@@ -270,13 +263,11 @@ export function OrcamentoPage() {
         setValorTotalPedido(valorCalculado);
 
         if (pedido.valor_final_salvo !== valorCalculado) {
-          // { changed code } - Conversão forçada com Number() para evitar crash toFixed
           setValorFinalManual(pedido.valor_final_salvo ? Number(pedido.valor_final_salvo) : null);
         } else {
           setValorFinalManual(null);
         }
 
-        // aplica preferência do pedido
         setOcultarValoresUnitarios(pedido.ocultar_valores_unitarios ?? false);
 
         setIsEditing(true);
@@ -326,7 +317,6 @@ export function OrcamentoPage() {
 
     setIsSalvando(true);
 
-    // { changed code } - garante que os quadros têm o valorCalculado atualizado
     const quadrosParaSalvar = quadrosDoPedido.map(q => ({
       ...q,
       valorCalculado: q.valorCalculado,
@@ -405,20 +395,7 @@ export function OrcamentoPage() {
     } finally {
       setIsSalvando(false);
     }
-  }, [
-    atendente,
-    cliente,
-    telefone,
-    observacoes,
-    condicaoPagamento,
-    quadrosDoPedido,
-    valorTotalPedido,
-    valorFinalManual,
-    isEditing,
-    pedidoId,
-    navigate,
-    ocultarValoresUnitarios,
-  ]);
+  }, [atendente, cliente, quadrosDoPedido, observacoes, condicaoPagamento, valorTotalPedido, valorFinalManual, ocultarValoresUnitarios, isEditing, pedidoId, navigate, telefone, handleLimparPedido]);
 
   if (isLoading) {
     return (

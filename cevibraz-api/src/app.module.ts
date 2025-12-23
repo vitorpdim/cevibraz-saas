@@ -9,6 +9,7 @@ import { ClientesModule } from './clientes/clientes.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { CalculoModule } from './calculo/calculo.module';
 import { PdfModule } from './pdf/pdf.module';
+import { EstoqueModule } from './estoque/estoque.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { PdfModule } from './pdf/pdf.module';
     PedidosModule,
     CalculoModule,
     PdfModule,
+    EstoqueModule,
   ],
   controllers: [AppController],
   providers: [AppService],

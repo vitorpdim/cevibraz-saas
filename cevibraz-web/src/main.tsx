@@ -8,6 +8,7 @@ import { BacklogPage } from "./pages/BacklogPage.tsx";
 import { MaintenancePage } from "./pages/MaintenancePage.tsx";
 import { MoldurasPage } from "./pages/MoldurasPage.tsx";
 import { MateriaisPage } from "./pages/MateriaisPage.tsx";
+import { EstoquePage } from "./pages/EstoquePage.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
@@ -38,7 +39,7 @@ const router = createBrowserRouter([
       },
       {
         path: "estoque",
-        element: <MaintenancePage />,
+        element: <EstoquePage />,
       },
       {
         path: "dashboard",
