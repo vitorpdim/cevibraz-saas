@@ -9,7 +9,6 @@ import {
   Settings,
   History,
   X,
-  Search,
 } from "lucide-react";
 import "./EstoquePage.css";
 import {
