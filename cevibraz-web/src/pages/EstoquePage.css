@@ -252,20 +252,26 @@
 .modulo-estoque .item-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  min-width: 0;
 }
 
 .modulo-estoque .item-image {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 8px;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   border: 2px solid var(--color-border);
+  background: linear-gradient(135deg, rgba(72, 187, 120, 0.05), rgba(236, 201, 75, 0.05));
+  padding: 4px;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .modulo-estoque .item-image-placeholder {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 8px;
   background: linear-gradient(
     135deg,
@@ -277,12 +283,15 @@
   justify-content: center;
   color: #94a3b8;
   border: 2px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .modulo-estoque .item-details {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  flex: 1;
 }
 
 .modulo-estoque .item-name {

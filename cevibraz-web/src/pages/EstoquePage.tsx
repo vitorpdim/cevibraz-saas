@@ -9,7 +9,6 @@ import {
   Settings,
   History,
   X,
-  Search,
 } from "lucide-react";
 import "./EstoquePage.css";
 import {
@@ -79,6 +78,7 @@ export function EstoquePage() {
     new Set()
   );
   const [historicoItem, setHistoricoItem] = useState<Movimentacao[]>([]);
+  const [imagensFalhadas, setImagensFalhadas] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     carregarDados();
@@ -129,6 +129,11 @@ export function EstoquePage() {
       console.error("Erro ao carregar histórico:", error);
       alert("Erro ao carregar histórico do item");
     }
+  };
+
+  const handleImageError = (itemId: number, itemTipo: string) => {
+    const key = `${itemTipo}-${itemId}`;
+    setImagensFalhadas((prev) => new Set(prev).add(key));
   };
 
   const handleSubmitEntrada = async () => {
@@ -427,11 +432,12 @@ export function EstoquePage() {
                   <tr key={`${item.tipo}-${item.id}`}>
                     <td>
                       <div className="item-info">
-                        {item.imagem_url ? (
+                        {item.imagem_url && !imagensFalhadas.has(`${item.tipo}-${item.id}`) ? (
                           <img
                             src={item.imagem_url}
                             alt={item.nome}
                             className="item-image"
+                            onError={() => handleImageError(item.id, item.tipo)}
                           />
                         ) : (
                           <div className="item-image-placeholder">

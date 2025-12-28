@@ -44,7 +44,11 @@ export const fetchDashboard = async (): Promise<DashboardData> => {
 export const fetchItensEstoque = async (): Promise<ItemEstoque[]> => {
   try {
     const response = await apiClient.get<ItemEstoque[]>("/api/estoque/itens");
-    return response.data;
+    // Corrigir URLs das imagens das molduras
+    return response.data.map(item => ({
+      ...item,
+      imagem_url: item.imagem_url ? `${API_URL}${item.imagem_url}` : undefined,
+    }));
   } catch (error) {
     throw new Error("Falha ao carregar itens do estoque");
   }

@@ -4,6 +4,7 @@ export interface Moldura {
   nome: string;
   valor_metro_linear: number;
   imagem_url: string | null;
+  estoque_atual?: number;
 }
 
 export interface Material {
