@@ -3,14 +3,14 @@ import { X, Search, Image as ImageIcon } from "lucide-react";
 import type { Moldura } from "../types";
 import { fetchMolduras } from "../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://cevibraz-api.onrender.com";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://cevibraz-api.onrender.com";
 
 interface MolduraSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (moldura: Moldura) => void;
-  // add p saber quais já foram selecionadas (opcional, pra UI)
-  moldurasJaSelecionadas?: string[]; 
+  moldurasJaSelecionadas?: string[];
 }
 
 export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
@@ -47,11 +47,12 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
   }, [molduras, searchTerm]);
 
   // Função para determinar o status do estoque
-  const getEstoqueStatus = (estoque: number | string | undefined) => {
+  const getEstoqueStatus = (estoque: number | undefined) => {
     if (estoque === undefined || estoque === null) {
       return { tipo: "desconhecido", label: "Sem dados", cor: "#94a3b8" };
     }
-    const estoqueNum = typeof estoque === 'string' ? parseFloat(estoque) : estoque;
+    const estoqueNum =
+      typeof estoque === "string" ? parseFloat(estoque) : estoque;
     if (isNaN(estoqueNum)) {
       return { tipo: "desconhecido", label: "Sem dados", cor: "#94a3b8" };
     }
@@ -64,39 +65,48 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
     return { tipo: "ok", label: "Em Estoque", cor: "#10b981" };
   };
 
-  if (!isOpen) return null;
-
-  const molduraSelecionada = selectedPreview || filteredMolduras[0];
-  const statusEstoque = molduraSelecionada
-    ? getEstoqueStatus(molduraSelecionada.estoque_atual)
+  const statusEstoque = selectedPreview
+    ? getEstoqueStatus(selectedPreview.estoque_atual)
     : null;
+
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 2000 }}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "900px" }}>
+      <div
+        className="modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: "900px" }}
+      >
         {/* --- HEADER --- */}
         <div className="modal-header">
           <h2>Selecionar Moldura</h2>
-          <button 
+          <button
             className="modal-close-btn"
-            onClick={onClose} 
+            onClick={onClose}
             aria-label="Fechar"
           >
             <X size={24} />
           </button>
         </div>
 
-        <div className="moldura-selector-container" style={{ margin: "24px", border: "none", background: "transparent" }}>
+        <div
+          className="moldura-selector-container"
+          style={{ margin: "24px", border: "none", background: "transparent" }}
+        >
           <div className="moldura-selector-layout">
             {/* --- LADO ESQUERDO --- */}
             <div className="moldura-preview-section">
               <div className="moldura-preview-card">
-                <div className="moldura-preview-image" style={{ position: "relative", overflow: "hidden" }}>
-                  {molduraSelecionada?.imagem_url ? (
+                <div
+                  className="moldura-preview-image"
+                  style={{ position: "relative", overflow: "hidden" }}
+                >
+                  {selectedPreview?.imagem_url ? (
                     <>
                       <img
-                        src={`${API_URL}${molduraSelecionada.imagem_url}`}
-                        alt={molduraSelecionada.nome}
+                        src={`${API_URL}${selectedPreview.imagem_url}`}
+                        alt={selectedPreview.nome}
                       />
                       {/* Badge de Estoque no Preview */}
                       <div
@@ -129,7 +139,7 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
                         <ImageIcon size={40} />
                         <span>Sem imagem</span>
                       </div>
-                      {molduraSelecionada && (
+                      {selectedPreview && (
                         <div
                           style={{
                             position: "absolute",
@@ -153,12 +163,12 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
                   )}
                 </div>
 
-                {molduraSelecionada && (
+                {selectedPreview && (
                   <div className="moldura-preview-info">
                     <div className="moldura-preview-item">
                       <span className="moldura-preview-label">Código:</span>
                       <span className="moldura-preview-value">
-                        {molduraSelecionada.codigo}
+                        {selectedPreview.codigo}
                       </span>
                     </div>
                     <div className="moldura-preview-item">
@@ -166,7 +176,7 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
                       <span className="moldura-preview-value">
                         R${" "}
                         {parseFloat(
-                          molduraSelecionada.valor_metro_linear.toString()
+                          selectedPreview.valor_metro_linear.toString()
                         ).toFixed(2)}
                         /m
                       </span>
@@ -180,13 +190,16 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
                           fontWeight: 700,
                         }}
                       >
-                        {molduraSelecionada.estoque_atual !== undefined
-                          ? `${parseFloat(String(molduraSelecionada.estoque_atual)).toFixed(2)}m`
+                        {selectedPreview.estoque_atual !== undefined
+                          ? `${parseFloat(
+                              String(selectedPreview.estoque_atual)
+                            ).toFixed(2)}m`
                           : "N/A"}
                       </span>
                     </div>
-                    {molduraSelecionada.estoque_atual !== undefined &&
-                      parseFloat(String(molduraSelecionada.estoque_atual)) <= 0 && (
+                    {selectedPreview.estoque_atual !== undefined &&
+                      parseFloat(String(selectedPreview.estoque_atual)) <=
+                        0 && (
                         <div
                           style={{
                             marginTop: "12px",
@@ -203,9 +216,10 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
                           ⚠️ Estoque zerado - Será necessário encomendar
                         </div>
                       )}
-                    {molduraSelecionada.estoque_atual !== undefined &&
-                      parseFloat(String(molduraSelecionada.estoque_atual)) > 0 &&
-                      parseFloat(String(molduraSelecionada.estoque_atual)) < 10 && (
+                    {selectedPreview.estoque_atual !== undefined &&
+                      parseFloat(String(selectedPreview.estoque_atual)) > 0 &&
+                      parseFloat(String(selectedPreview.estoque_atual)) <
+                        10 && (
                         <div
                           style={{
                             marginTop: "12px",
@@ -222,6 +236,20 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
                           ⚠️ Estoque baixo - Verifique disponibilidade
                         </div>
                       )}
+                    <button
+                      className="btn btn-success"
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        marginTop: "16px",
+                      }}
+                      onClick={() => {
+                        onSelect(selectedPreview);
+                        onClose();
+                      }}
+                    >
+                      Confirmar Seleção
+                    </button>
                   </div>
                 )}
               </div>
@@ -229,15 +257,21 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
 
             {/* --- LADO DIREITO --- */}
             <div className="moldura-list-section">
-              <div style={{ position: 'relative', marginBottom: '1rem' }}>
-                <Search 
-                  size={18} 
-                  style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)' }} 
+              <div style={{ position: "relative", marginBottom: "1rem" }}>
+                <Search
+                  size={18}
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "var(--color-text-secondary)",
+                  }}
                 />
                 <input
                   type="text"
                   className="moldura-search-input"
-                  style={{ paddingLeft: '2.5rem', margin: 0 }}
+                  style={{ paddingLeft: "2.5rem", margin: 0 }}
                   placeholder="Filtrar por nome ou código..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -247,25 +281,37 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
 
               <div className="moldura-list">
                 {loading ? (
-                  <p style={{ textAlign: 'center', padding: '2rem' }}>Carregando...</p>
+                  <p style={{ textAlign: "center", padding: "2rem" }}>
+                    Carregando...
+                  </p>
                 ) : filteredMolduras.length === 0 ? (
-                  <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-secondary)' }}>Nenhuma moldura encontrada.</p>
+                  <p
+                    style={{
+                      textAlign: "center",
+                      padding: "2rem",
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
+                    Nenhuma moldura encontrada.
+                  </p>
                 ) : (
                   filteredMolduras.map((moldura) => {
                     const statusItem = getEstoqueStatus(moldura.estoque_atual);
-                    const isSelected = molduraSelecionada?.id === moldura.id;
+                    const isSelected = selectedPreview?.id === moldura.id;
 
                     return (
                       <div
                         key={moldura.id}
-                        className={`moldura-list-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => { setSelectedPreview(moldura); }}
-                        onDoubleClick={() => { onSelect(moldura); onClose(); }}
+                        className={`moldura-list-item ${
+                          isSelected ? "selected" : ""
+                        }`}
+                        onClick={() => {
+                          setSelectedPreview(moldura);
+                        }}
                         style={{
                           cursor: "pointer",
                           position: "relative",
-                          opacity:
-                            statusItem.tipo === "critico" ? 0.8 : 1,
+                          opacity: statusItem.tipo === "critico" ? 0.8 : 1,
                           backgroundColor: isSelected
                             ? "rgba(72, 187, 120, 0.15)"
                             : "transparent",
@@ -286,7 +332,10 @@ export const MolduraSelectorModal: React.FC<MolduraSelectorModalProps> = ({
                           }}
                         />
 
-                        <div className="moldura-list-item-info" style={{ marginLeft: "16px" }}>
+                        <div
+                          className="moldura-list-item-info"
+                          style={{ marginLeft: "16px" }}
+                        >
                           <div className="moldura-list-item-name">
                             {moldura.nome}
                           </div>
