@@ -30,6 +30,15 @@ export class Quadro {
   @Column({ default: false })
   limpeza_flag: boolean;
 
+  @Column({ type: 'int', default: 1 })
+  quantidade: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  valor_calculado: number;
+
+  @Column({ type: 'json', nullable: true })
+  detalhes_calculo: any;
+
   // --- relações ---
   @ManyToOne(() => Pedido, (pedido) => pedido.quadros, { onDelete: 'CASCADE' })
   pedido: Pedido;

@@ -18,6 +18,9 @@ export class QuadroDto {
   limpezaSelecionada: boolean;
   valorCalculado: number;
   acrescimo_cm?: number;
+  @IsOptional()
+  @IsNumber()
+  quantidade?: number;
 }
 
 export interface QuadroDtoWithExtras
@@ -127,7 +130,6 @@ export interface PedidoParaEdicao {
   clienteTelefone: string;
   observacoes: string;
   condicao_pagamento?: string;
-  // USADO: quadros com extras (detalhes/calculo/acrescimo)
   quadros: QuadroDtoWithExtras[];
   valor_final_salvo: number;
   ocultar_valores_unitarios?: boolean; // adicionado

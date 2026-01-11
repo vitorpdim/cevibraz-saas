@@ -13,6 +13,7 @@ import { MoldurasModule } from '../molduras/molduras.module';
 import { MateriaisModule } from '../materiais/materiais.module';
 import { CalculoModule } from '../calculo/calculo.module';
 import { PdfModule } from '../pdf/pdf.module';
+import { EstoqueModule } from '../estoque/estoque.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PdfModule } from '../pdf/pdf.module';
     MateriaisModule,
     CalculoModule,
     PdfModule,
+    EstoqueModule,
   ],
   controllers: [PedidosController],
   providers: [PedidosService],
