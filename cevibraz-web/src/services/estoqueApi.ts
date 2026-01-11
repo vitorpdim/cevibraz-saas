@@ -36,7 +36,7 @@ export const fetchDashboard = async (): Promise<DashboardData> => {
   try {
     const response = await apiClient.get<DashboardData>("/api/estoque/dashboard");
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error("Falha ao carregar dashboard do estoque");
   }
 };
@@ -49,7 +49,7 @@ export const fetchItensEstoque = async (): Promise<ItemEstoque[]> => {
       ...item,
       imagem_url: item.imagem_url ? `${API_URL}${item.imagem_url}` : undefined,
     }));
-  } catch (error) {
+  } catch {
     throw new Error("Falha ao carregar itens do estoque");
   }
 };
@@ -62,7 +62,7 @@ export const fetchMovimentacoes = async (
       params: { limite },
     });
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error("Falha ao carregar movimentações");
   }
 };
@@ -79,7 +79,7 @@ export const fetchMovimentacoesPorItem = async (
       }
     );
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error("Falha ao carregar histórico do item");
   }
 };
@@ -88,7 +88,7 @@ export const registrarEntrada = async (dto: EntradaManualDto): Promise<unknown> 
   try {
     const response = await apiClient.post("/api/estoque/entrada", dto);
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error("Falha ao registrar entrada");
   }
 };
@@ -107,7 +107,7 @@ export const registrarBaixa = async (
       descricao,
     });
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error("Falha ao registrar baixa");
   }
 };
@@ -116,7 +116,7 @@ export const ajustarEstoque = async (dto: AjusteEstoqueDto): Promise<unknown> =>
   try {
     const response = await apiClient.post("/api/estoque/ajuste", dto);
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error("Falha ao ajustar estoque");
   }
 };
@@ -132,7 +132,7 @@ export const parseXml = async (file: File): Promise<ParsedXml> => {
       },
     });
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error("Falha ao processar arquivo XML");
   }
 };
@@ -141,7 +141,7 @@ export const vincularItemXml = async (dto: VincularItemXmlDto): Promise<unknown>
   try {
     const response = await apiClient.post("/api/estoque/xml/vincular", dto);
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error("Falha ao vincular item XML");
   }
 };

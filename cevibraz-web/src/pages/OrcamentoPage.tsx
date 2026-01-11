@@ -27,10 +27,11 @@ const estadoInicialFormQuadro = {
   medidaCliente: false,
   molduraSelecionada: "",
   moldurasDoQuadro: [] as string[],
-  materiaisDoQuadro: {} as Record<string, number>, // agora mapa nome -> quantidade
+  materiaisDoQuadro: {} as Record<string, number>,
   espessuraPaspatur: "",
   isPaspaturVisivel: false,
-  acrescimo: "", // novo
+  acrescimo: "",
+  quantidade: "1", // NOVO
   resumoDoQuadro: "Preencha os campos para ver o resumo.",
 };
 
@@ -126,7 +127,15 @@ export function OrcamentoPage() {
       }
       return { ...prevState, resumoDoQuadro: resumo };
     });
-  }, [formQuadro.altura, formQuadro.largura, formQuadro.moldurasDoQuadro, formQuadro.materiaisDoQuadro, formQuadro.espessuraPaspatur, formQuadro.isPaspaturVisivel, formQuadro]);
+  }, [
+    formQuadro.altura,
+    formQuadro.largura,
+    formQuadro.moldurasDoQuadro,
+    formQuadro.materiaisDoQuadro,
+    formQuadro.espessuraPaspatur,
+    formQuadro.isPaspaturVisivel,
+    formQuadro,
+  ]);
 
   const handleAddMoldura = () => {
     if (
@@ -174,6 +183,11 @@ export function OrcamentoPage() {
   const handleAdicionarQuadro = useCallback(async () => {
     const alturaNum = parseFloat(formQuadro.altura);
     const larguraNum = parseFloat(formQuadro.largura);
+    const quantidadeNum = Math.max(
+      1,
+      parseInt(formQuadro.quantidade || "1", 10)
+    );
+
     if (
       isNaN(alturaNum) ||
       isNaN(larguraNum) ||
@@ -185,7 +199,6 @@ export function OrcamentoPage() {
     }
 
     try {
-      // criar array de materiais repetidos conforme quantidades
       const materiaisSelecionadosArray: string[] = [];
       for (const [nome, qty] of Object.entries(
         formQuadro.materiaisDoQuadro || {}
@@ -203,31 +216,36 @@ export function OrcamentoPage() {
         materiaisSelecionados: materiaisSelecionadosArray,
         espessuraPaspatur: parseFloat(formQuadro.espessuraPaspatur || "0"),
         limpezaSelecionada: materiaisSelecionadosArray.includes("Limpeza"),
-        acrescimo_cm: parseFloat(formQuadro.acrescimo || "0"), // novo
+        acrescimo_cm: parseFloat(formQuadro.acrescimo || "0"),
       };
 
       const resultadoCalculo = await calcularPrecoQuadro(dto);
 
-      const novoQuadro: QuadroNoEstado = {
-        id: Math.floor(Math.random() * 1e9),
-        altura: dto.altura,
-        largura: dto.largura,
-        moldurasSelecionadas: dto.moldurasSelecionadas,
-        materiaisSelecionados: dto.materiaisSelecionados,
-        espessuraPaspatur: dto.espessuraPaspatur,
-        medidaFornecidaCliente: dto.medidaFornecidaCliente,
-        limpezaSelecionada: dto.limpezaSelecionada,
-        valorCalculado: resultadoCalculo.total,
-        detalhesCalculo: resultadoCalculo.detalhes,
-      };
+      // NOVO: adiciona quantidadeNum quadros idênticos
+      for (let i = 0; i < quantidadeNum; i++) {
+        const novoQuadro: QuadroNoEstado = {
+          id: Math.floor(Math.random() * 1e9),
+          altura: dto.altura,
+          largura: dto.largura,
+          moldurasSelecionadas: dto.moldurasSelecionadas,
+          materiaisSelecionados: dto.materiaisSelecionados,
+          espessuraPaspatur: dto.espessuraPaspatur,
+          medidaFornecidaCliente: dto.medidaFornecidaCliente,
+          limpezaSelecionada: dto.limpezaSelecionada,
+          valorCalculado: resultadoCalculo.total,
+          detalhesCalculo: resultadoCalculo.detalhes,
+          acrescimo_cm: dto.acrescimo_cm,
+          quantidade: 1, // cada quadro tem quantidade 1 (já adicionado quantidadeNum vezes)
+        };
 
-      setQuadrosDoPedido((quadrosAtuais) => [...quadrosAtuais, novoQuadro]);
+        setQuadrosDoPedido((quadrosAtuais) => [...quadrosAtuais, novoQuadro]);
+      }
 
       setFormQuadro(() => ({
         ...estadoInicialFormQuadro,
-        resumoDoQuadro: `Quadro ${alturaNum}x${larguraNum} adicionado! Valor: R$ ${resultadoCalculo.total.toFixed(
+        resumoDoQuadro: `${quantidadeNum}x Quadro ${alturaNum}x${larguraNum} adicionado(s)! Valor unitário: R$ ${resultadoCalculo.total.toFixed(
           2
-        )}`,
+        )} | Total: R$ ${(resultadoCalculo.total * quantidadeNum).toFixed(2)}`,
       }));
     } catch (err: unknown) {
       console.error("Erro ao calcular/adicionar quadro:", err);
@@ -263,7 +281,9 @@ export function OrcamentoPage() {
         setValorTotalPedido(valorCalculado);
 
         if (pedido.valor_final_salvo !== valorCalculado) {
-          setValorFinalManual(pedido.valor_final_salvo ? Number(pedido.valor_final_salvo) : null);
+          setValorFinalManual(
+            pedido.valor_final_salvo ? Number(pedido.valor_final_salvo) : null
+          );
         } else {
           setValorFinalManual(null);
         }
@@ -317,7 +337,7 @@ export function OrcamentoPage() {
 
     setIsSalvando(true);
 
-    const quadrosParaSalvar = quadrosDoPedido.map(q => ({
+    const quadrosParaSalvar = quadrosDoPedido.map((q) => ({
       ...q,
       valorCalculado: q.valorCalculado,
     }));
@@ -395,7 +415,21 @@ export function OrcamentoPage() {
     } finally {
       setIsSalvando(false);
     }
-  }, [atendente, cliente, quadrosDoPedido, observacoes, condicaoPagamento, valorTotalPedido, valorFinalManual, ocultarValoresUnitarios, isEditing, pedidoId, navigate, telefone, handleLimparPedido]);
+  }, [
+    atendente,
+    cliente,
+    quadrosDoPedido,
+    observacoes,
+    condicaoPagamento,
+    valorTotalPedido,
+    valorFinalManual,
+    ocultarValoresUnitarios,
+    isEditing,
+    pedidoId,
+    navigate,
+    telefone,
+    handleLimparPedido,
+  ]);
 
   if (isLoading) {
     return (
@@ -431,6 +465,7 @@ export function OrcamentoPage() {
           espessuraPaspatur={formQuadro.espessuraPaspatur}
           isPaspaturVisivel={formQuadro.isPaspaturVisivel}
           acrescimo={formQuadro.acrescimo}
+          quantidade={formQuadro.quantidade}
           resumoDoQuadro={formQuadro.resumoDoQuadro}
           onAtendenteChange={setAtendente}
           onClienteChange={setCliente}
@@ -449,11 +484,16 @@ export function OrcamentoPage() {
           onEspessuraPaspaturChange={(v) =>
             setFormQuadro((f) => ({ ...f, espessuraPaspatur: v }))
           }
-          onAcrescimoChange={(v) => setFormQuadro((f) => ({ ...f, acrescimo: v }))}
+          onAcrescimoChange={(v) =>
+            setFormQuadro((f) => ({ ...f, acrescimo: v }))
+          }
           onLimparCampos={handleLimparCampos}
           onAdicionarQuadro={handleAdicionarQuadro}
           condicaoPagamento={condicaoPagamento}
           onCondicaoPagamentoChange={setCondicaoPagamento}
+          onQuantidadeChange={function (): void {
+            throw new Error("Function not implemented.");
+          }}
         />
 
         <ResumoPedido

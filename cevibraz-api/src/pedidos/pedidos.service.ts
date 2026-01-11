@@ -18,7 +18,7 @@ import {
   QuadroParaPdf,
 } from './pedido.dto';
 import { PdfService } from '../pdf/pdf.service';
-
+import { EstoqueService } from '../estoque/services/estoque.service';
 interface MaxPedidoResult {
   max_num: number | null;
 }
@@ -41,6 +41,7 @@ export class PedidosService {
     private clientesService: ClientesService,
     private calculoService: CalculoService,
     private pdfService: PdfService,
+    private estoqueService: EstoqueService,
   ) {}
 
   async findEntityById(id: number): Promise<Pedido | null> {
@@ -280,12 +281,36 @@ export class PedidosService {
   }
 
   async updateStatus(id: number, dto: UpdateStatusDto) {
+    // Buscar pedido completo com relações para possível baixa de estoque
+    const pedido = await this.pedidosRepository.findOne({
+      where: { id },
+      relations: [
+        'quadros',
+        'quadros.quadroMolduras',
+        'quadros.quadroMolduras.moldura',
+        'quadros.quadroMateriais',
+        'quadros.quadroMateriais.material',
+      ],
+    });
+
+    if (!pedido) {
+      throw new NotFoundException('Pedido não encontrado.');
+    }
+
+    // Verifica gatilho de Baixa (Mudou para "Já Feito")
+    if (dto.status === 'Já Feito' && pedido.status !== 'Já Feito') {
+      await this.realizarBaixaDeEstoque(pedido);
+    }
+
+    // Atualiza o status
     const result = await this.entityManager.update(Pedido, id, {
       status: dto.status,
     });
+
     if (result.affected === 0) {
       throw new NotFoundException('Pedido não encontrado.');
     }
+
     return {
       message: `Status do pedido ${id} atualizado para "${dto.status}" com sucesso.`,
     };
@@ -332,12 +357,12 @@ export class PedidosService {
         acrescimo_cm: quadroDto.acrescimo_cm ?? 0,
         medida_fornecida_cliente: quadroDto.medidaFornecidaCliente,
         limpeza_flag: quadroDto.limpezaSelecionada,
+        quantidade: quadroDto.quantidade || 1,
       });
       await manager.save(novoQuadro);
 
       const qmPromises: Promise<any>[] = [];
       const moldurasSalvas: { nome: string; codigo: string }[] = [];
-      // espessura TEM q ser number | undefined
       const materiaisSalvos: {
         nome: string;
         espessura_paspatur_cm: number | undefined;
@@ -400,6 +425,10 @@ export class PedidosService {
         acrescimo_cm: quadroDto.acrescimo_cm ?? 0,
       });
 
+      novoQuadro.valor_calculado = detalhesCalculo.total;
+      novoQuadro.detalhes_calculo = detalhesCalculo.detalhes;
+      await manager.save(novoQuadro);
+
       quadrosParaPdf.push({
         ...quadroDto,
         id: novoQuadro.id,
@@ -413,5 +442,65 @@ export class PedidosService {
     }
 
     return quadrosParaPdf;
+  }
+
+  private async realizarBaixaDeEstoque(pedido: Pedido) {
+    this.logger.log(
+      `Iniciando baixa de estoque para pedido #${pedido.numero_pedido}`,
+    );
+
+    for (const quadro of pedido.quadros) {
+      const quantidadeQuadros = quadro.quantidade || 1;
+
+      // 1. Baixar Molduras
+      const perimetroMetros =
+        ((Number(quadro.altura_cm) + Number(quadro.largura_cm)) * 2) / 100;
+      const consumoUnitario = perimetroMetros * 1.1;
+
+      for (const qm of quadro.quadroMolduras) {
+        if (qm.moldura) {
+          try {
+            await this.estoqueService.registrarBaixa({
+              tipo_item: 'moldura',
+              item_id: qm.moldura.id,
+              quantidade: parseFloat(
+                (consumoUnitario * quantidadeQuadros).toFixed(2),
+              ),
+              pedido_id: pedido.id,
+              descricao: `Baixa Pedido ${pedido.numero_pedido} (Qtd: ${quantidadeQuadros})`,
+            });
+          } catch (e) {
+            this.logger.error(`Erro baixa moldura: ${e}`);
+          }
+        }
+      }
+
+      // 2. Baixar Materiais
+      const areaM2 =
+        (Number(quadro.altura_cm) * Number(quadro.largura_cm)) / 10000;
+
+      for (const qmat of quadro.quadroMateriais) {
+        if (qmat.material) {
+          try {
+            let consumoMat = areaM2;
+            if (qmat.material.unidade === 'un') {
+              consumoMat = 1;
+            }
+
+            await this.estoqueService.registrarBaixa({
+              tipo_item: 'material',
+              item_id: qmat.material.id,
+              quantidade: parseFloat(
+                (consumoMat * quantidadeQuadros).toFixed(2),
+              ),
+              pedido_id: pedido.id,
+              descricao: `Baixa Pedido ${pedido.numero_pedido}`,
+            });
+          } catch (e) {
+            this.logger.error(`Erro baixa material: ${e}`);
+          }
+        }
+      }
+    }
   }
 }

@@ -42,6 +42,7 @@ export interface QuadroNoEstado {
   valorCalculado: number;
   detalhesCalculo?: string[];
   acrescimo_cm?: number;
+  quantidade?: number; // NOVO
 }
 
 // p criar/atualizar pedido envia p api

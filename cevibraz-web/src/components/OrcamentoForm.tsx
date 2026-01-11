@@ -38,6 +38,8 @@ interface OrcamentoFormProps {
   onCondicaoPagamentoChange: (val: string) => void;
   acrescimo: string;
   onAcrescimoChange: (value: string) => void;
+  quantidade: string;
+  onQuantidadeChange: (value: string) => void;
 }
 
 export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
@@ -71,6 +73,8 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
     onCondicaoPagamentoChange,
     acrescimo,
     onAcrescimoChange,
+    quantidade,
+    onQuantidadeChange,
   } = props;
 
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
@@ -393,6 +397,23 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = (props) => {
           />
           <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>
             Aumenta a área de cálculo (vidro/fundo) sem mudar a medida nominal.
+          </small>
+        </div>
+
+        <div className="form-group" style={{ marginTop: "1.5rem" }}>
+          <label htmlFor="quantidade">Quantidade de quadros iguais</label>
+          <input
+            type="number"
+            className="form-control"
+            id="quantidade"
+            value={quantidade}
+            onChange={(e) => onQuantidadeChange(e.target.value)}
+            placeholder="1"
+            min="1"
+            step="1"
+          />
+          <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>
+            Adicione múltiplos quadros com as mesmas medidas e materiais de uma vez
           </small>
         </div>
 
