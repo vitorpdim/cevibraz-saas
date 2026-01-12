@@ -31,7 +31,7 @@ const estadoInicialFormQuadro = {
   espessuraPaspatur: "",
   isPaspaturVisivel: false,
   acrescimo: "",
-  quantidade: "1", // NOVO
+  quantidade: "1", // Campo Novo
   resumoDoQuadro: "Preencha os campos para ver o resumo.",
 };
 
@@ -40,138 +40,168 @@ export function OrcamentoPage() {
   const [materiaisList, setMateriaisList] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Campos do Cabeçalho
   const [atendente, setAtendente] = useState("");
   const [cliente, setCliente] = useState("");
   const [telefone, setTelefone] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [condicaoPagamento, setCondicaoPagamento] = useState("");
-  const [quadrosDoPedido, setQuadrosDoPedido] = useState<QuadroNoEstado[]>([]);
-  const [valorTotalPedido, setValorTotalPedido] = useState(0);
-  const [formQuadro, setFormQuadro] = useState(estadoInicialFormQuadro);
-  const { pedidoId } = useParams<{ pedidoId?: string }>();
-  const navigate = useNavigate();
-  const [valorFinalManual, setValorFinalManual] = useState<number | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSalvando, setIsSalvando] = useState(false);
   const [ocultarValoresUnitarios, setOcultarValoresUnitarios] = useState(false);
 
+  // Estado do Formulário do Quadro Atual
+  const [formQuadro, setFormQuadro] = useState(estadoInicialFormQuadro);
+
+  // Lista de Quadros já adicionados ao Pedido
+  const [quadrosDoPedido, setQuadrosDoPedido] = useState<QuadroNoEstado[]>([]);
+  const [valorFinalManual, setValorFinalManual] = useState<number | null>(null);
+
+  const [isSalvando, setIsSalvando] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const { pedidoId } = useParams();
+  const navigate = useNavigate();
+
+  // --- Carregamento Inicial ---
   useEffect(() => {
-    const carregarDadosIniciais = async () => {
+    async function carregarDados() {
       try {
         setIsLoading(true);
-        setError(null);
-        const [moldurasData, materiaisData] = await Promise.all([
+        const [molduras, materiais] = await Promise.all([
           fetchMolduras(),
           fetchMateriais(),
         ]);
-        setMoldurasList(moldurasData);
-        setMateriaisList(materiaisData);
+        setMoldurasList(molduras);
+        setMateriaisList(materiais);
+
+        // Se tiver ID na URL, carrega o pedido para edição
+        if (pedidoId) {
+          setIsEditing(true);
+          const pedido = await fetchPedidoById(Number(pedidoId));
+          setAtendente(pedido.atendente);
+          setCliente(pedido.clienteNome);
+          setTelefone(pedido.clienteTelefone);
+          setObservacoes(pedido.observacoes);
+          setCondicaoPagamento(pedido.condicao_pagamento || "");
+          setQuadrosDoPedido(pedido.quadros);
+          setValorFinalManual(
+            pedido.valor_final_salvo !== pedido.quadros.reduce((acc, q) => acc + q.valorCalculado, 0)
+              ? pedido.valor_final_salvo
+              : null
+          );
+          setOcultarValoresUnitarios(pedido.ocultar_valores_unitarios || false);
+        }
       } catch (err) {
-        console.error("erro ao buscar dados iniciais:", err);
-        setError("Falha ao carregar dados da API. Verifique o backend!");
+        console.error("Erro ao carregar dados:", err);
+        setError("Falha ao carregar dados. Verifique a API.");
       } finally {
-        //fodase
+        setIsLoading(false);
+      }
+    }
+    carregarDados();
+  }, [pedidoId]);
+
+  // --- Lógica do Formulário ---
+
+  // Cálculo automático do Resumo enquanto digita
+  useEffect(() => {
+    const calcularResumo = async () => {
+      const {
+        altura,
+        largura,
+        moldurasDoQuadro,
+        materiaisDoQuadro,
+        espessuraPaspatur,
+        medidaCliente,
+        isPaspaturVisivel,
+        acrescimo,
+        quantidade,
+      } = formQuadro;
+
+      if (!altura || !largura) {
+        setFormQuadro((prev) => ({
+          ...prev,
+          resumoDoQuadro: "Preencha altura e largura...",
+        }));
+        return;
+      }
+
+      const materiaisSelecionados = Object.keys(materiaisDoQuadro).filter(
+        (k) => materiaisDoQuadro[k] > 0
+      );
+
+      const dto: CalcularQuadroDto = {
+        altura: parseFloat(altura),
+        largura: parseFloat(largura),
+        moldurasSelecionadas: moldurasDoQuadro,
+        materiaisSelecionados: materiaisSelecionados,
+        espessuraPaspatur: isPaspaturVisivel ? parseFloat(espessuraPaspatur) || 0 : 0,
+        medidaFornecidaCliente: medidaCliente,
+        limpezaSelecionada: false,
+        acrescimo_cm: parseFloat(acrescimo) || 0,
+      };
+
+      try {
+        const resultado = await calcularPrecoQuadro(dto);
+        
+        // CORREÇÃO: Multiplica pelo número de quadros
+        const qtd = Math.max(1, parseInt(quantidade) || 1);
+        const totalMultiplicado = resultado.total * qtd;
+
+        setFormQuadro((prev) => ({
+          ...prev,
+          resumoDoQuadro: `Total Unitário: R$ ${resultado.total.toFixed(2)}\nQuantidade: ${qtd}\nTotal Item: R$ ${totalMultiplicado.toFixed(2)}\n\n${resultado.detalhes.join("\n")}`,
+        }));
+      } catch (error) {
+        console.error(error);
+        setFormQuadro((prev) => ({
+          ...prev,
+          resumoDoQuadro: "Erro ao calcular.",
+        }));
       }
     };
-    carregarDadosIniciais();
-  }, []);
 
-  useEffect(() => {
-    const total = quadrosDoPedido.reduce(
-      (acc, quadro) => acc + quadro.valorCalculado,
-      0
-    );
-    const totalArredondado = parseFloat(total.toFixed(2));
-    setValorTotalPedido(totalArredondado);
-  }, [quadrosDoPedido]);
-
-  // atualiza o resumo com base nos materiais (agora mapa)
-  useEffect(() => {
-    const {
-      altura,
-      largura,
-      moldurasDoQuadro,
-      materiaisDoQuadro,
-      espessuraPaspatur,
-      isPaspaturVisivel,
-    } = formQuadro;
-
-    let resumo = "Preencha os campos para ver o resumo.";
-
-    const materiaisSelecionadosNomes = Object.entries(materiaisDoQuadro || {})
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .filter(([_, qty]) => qty > 0)
-      .map(([name, qty]) => `${name}${qty > 1 ? ` x${qty}` : ""}`);
-
-    if (
-      altura ||
-      largura ||
-      moldurasDoQuadro.length > 0 ||
-      materiaisSelecionadosNomes.length > 0
-    ) {
-      resumo = `Medidas: ${altura || 0}cm x ${largura || 0}cm.\n`;
-      if (moldurasDoQuadro.length > 0) {
-        resumo += `Molduras: ${moldurasDoQuadro.join(", ")}.\n`;
-      }
-      if (materiaisSelecionadosNomes.length > 0) {
-        resumo += `Materiais: ${materiaisSelecionadosNomes.join(", ")}.\n`;
-      }
-      if (isPaspaturVisivel && espessuraPaspatur) {
-        resumo += `Esp. Paspatur: ${espessuraPaspatur}cm.`;
-      }
-    }
-
-    setFormQuadro((prevState) => {
-      if (prevState.resumoDoQuadro === resumo) {
-        return prevState;
-      }
-      return { ...prevState, resumoDoQuadro: resumo };
-    });
-  }, [
-    formQuadro.altura,
-    formQuadro.largura,
-    formQuadro.moldurasDoQuadro,
-    formQuadro.materiaisDoQuadro,
-    formQuadro.espessuraPaspatur,
-    formQuadro.isPaspaturVisivel,
-    formQuadro,
-  ]);
+    const timer = setTimeout(calcularResumo, 500); // Debounce para não travar
+    return () => clearTimeout(timer);
+  }, [formQuadro.altura, formQuadro.largura, formQuadro.moldurasDoQuadro, formQuadro.materiaisDoQuadro, formQuadro.espessuraPaspatur, formQuadro.medidaCliente, formQuadro.isPaspaturVisivel, formQuadro.acrescimo, formQuadro.quantidade]);
 
   const handleAddMoldura = () => {
-    if (
-      formQuadro.molduraSelecionada &&
-      !formQuadro.moldurasDoQuadro.includes(formQuadro.molduraSelecionada)
-    ) {
-      setFormQuadro((prevState) => ({
-        ...prevState,
-        moldurasDoQuadro: [
-          ...prevState.moldurasDoQuadro,
-          prevState.molduraSelecionada,
-        ],
-        molduraSelecionada: "",
-      }));
-    }
-  };
+    const { molduraSelecionada, moldurasDoQuadro } = formQuadro;
+    if (!molduraSelecionada) return alert("Selecione uma moldura primeiro.");
 
-  const handleRemoveUltimaMoldura = () => {
-    setFormQuadro((prevState) => ({
-      ...prevState,
-      moldurasDoQuadro: prevState.moldurasDoQuadro.slice(0, -1),
+    setFormQuadro((prev) => ({
+      ...prev,
+      moldurasDoQuadro: [...moldurasDoQuadro, molduraSelecionada],
+      molduraSelecionada: "", // Limpa seleção atual
     }));
   };
 
+  const handleRemoveUltimaMoldura = () => {
+    setFormQuadro((prev) => {
+      const novaLista = [...prev.moldurasDoQuadro];
+      novaLista.pop();
+      return { ...prev, moldurasDoQuadro: novaLista };
+    });
+  };
+
   const handleMaterialChange = (materialNome: string, quantidade: number) => {
-    setFormQuadro((prevState) => {
-      const novos = { ...(prevState.materiaisDoQuadro || {}) };
-      if (quantidade <= 0) {
-        delete novos[materialNome];
+    setFormQuadro((prev) => {
+      const novosMateriais = { ...prev.materiaisDoQuadro };
+      if (quantidade > 0) {
+        novosMateriais[materialNome] = quantidade;
       } else {
-        novos[materialNome] = quantidade;
+        delete novosMateriais[materialNome];
       }
+
+      // Lógica do Paspatur
+      const temPaspatur = Object.keys(novosMateriais).some((m) =>
+        m.toLowerCase().includes("paspatur")
+      );
+
       return {
-        ...prevState,
-        materiaisDoQuadro: novos,
-        isPaspaturVisivel: Object.keys(novos).some((n) => n === "Paspatur"),
+        ...prev,
+        materiaisDoQuadro: novosMateriais,
+        isPaspaturVisivel: temPaspatur,
+        espessuraPaspatur: temPaspatur ? prev.espessuraPaspatur : "",
       };
     });
   };
@@ -180,277 +210,196 @@ export function OrcamentoPage() {
     setFormQuadro(estadoInicialFormQuadro);
   };
 
+  // --- Adicionar Quadro ao Pedido ---
   const handleAdicionarQuadro = useCallback(async () => {
-    const alturaNum = parseFloat(formQuadro.altura);
-    const larguraNum = parseFloat(formQuadro.largura);
-    const quantidadeNum = Math.max(
-      1,
-      parseInt(formQuadro.quantidade || "1", 10)
-    );
+    const {
+      altura,
+      largura,
+      moldurasDoQuadro,
+      materiaisDoQuadro,
+      espessuraPaspatur,
+      medidaCliente,
+      isPaspaturVisivel,
+      acrescimo,
+      quantidade,
+    } = formQuadro;
 
-    if (
-      isNaN(alturaNum) ||
-      isNaN(larguraNum) ||
-      alturaNum <= 0 ||
-      larguraNum <= 0
-    ) {
-      alert("Altura e Largura devem ser números positivos.");
-      return;
+    if (!altura || !largura) return alert("Preencha as dimensões.");
+    if (moldurasDoQuadro.length === 0 && Object.keys(materiaisDoQuadro).length === 0) {
+      return alert("Adicione pelo menos uma moldura ou material.");
+    }
+    if (isPaspaturVisivel && !espessuraPaspatur) {
+      return alert("Informe a espessura do Paspatur.");
     }
 
-    try {
-      const materiaisSelecionadosArray: string[] = [];
-      for (const [nome, qty] of Object.entries(
-        formQuadro.materiaisDoQuadro || {}
-      )) {
-        for (let i = 0; i < Math.max(0, Math.floor(qty)); i++) {
-          materiaisSelecionadosArray.push(nome);
-        }
-      }
+    const materiaisSelecionados = Object.keys(materiaisDoQuadro).filter(
+      (k) => materiaisDoQuadro[k] > 0
+    );
 
-      const dto: CalcularQuadroDto = {
-        altura: alturaNum,
-        largura: larguraNum,
-        medidaFornecidaCliente: formQuadro.medidaCliente,
-        moldurasSelecionadas: formQuadro.moldurasDoQuadro,
-        materiaisSelecionados: materiaisSelecionadosArray,
-        espessuraPaspatur: parseFloat(formQuadro.espessuraPaspatur || "0"),
-        limpezaSelecionada: materiaisSelecionadosArray.includes("Limpeza"),
-        acrescimo_cm: parseFloat(formQuadro.acrescimo || "0"),
+    const dto: CalcularQuadroDto = {
+      altura: parseFloat(altura),
+      largura: parseFloat(largura),
+      moldurasSelecionadas: moldurasDoQuadro,
+      materiaisSelecionados: materiaisSelecionados,
+      espessuraPaspatur: isPaspaturVisivel ? parseFloat(espessuraPaspatur) || 0 : 0,
+      medidaFornecidaCliente: medidaCliente,
+      limpezaSelecionada: false,
+      acrescimo_cm: parseFloat(acrescimo) || 0,
+    };
+
+    try {
+      setIsLoading(true);
+      const resultado = await calcularPrecoQuadro(dto);
+
+      // --- CORREÇÃO: Multiplicar pela quantidade ---
+      const qtd = Math.max(1, parseInt(quantidade) || 1);
+      const valorTotalItem = resultado.total * qtd;
+
+      const novoQuadro: QuadroNoEstado = {
+        id: Date.now(), // ID temporário p/ front
+        altura: parseFloat(altura),
+        largura: parseFloat(largura),
+        moldurasSelecionadas: moldurasDoQuadro,
+        materiaisSelecionados: materiaisSelecionados,
+        espessuraPaspatur: isPaspaturVisivel ? parseFloat(espessuraPaspatur) || 0 : 0,
+        medidaFornecidaCliente: medidaCliente,
+        limpezaSelecionada: false,
+        
+        // Aqui salvamos o valor TOTAL (Unitário * Qtd)
+        valorCalculado: valorTotalItem, 
+        
+        // Salvamos a quantidade para exibir no resumo
+        quantidade: qtd,
+        
+        detalhesCalculo: resultado.detalhes,
+        acrescimo_cm: parseFloat(acrescimo) || 0,
       };
 
-      const resultadoCalculo = await calcularPrecoQuadro(dto);
-
-      // NOVO: adiciona quantidadeNum quadros idênticos
-      for (let i = 0; i < quantidadeNum; i++) {
-        const novoQuadro: QuadroNoEstado = {
-          id: Math.floor(Math.random() * 1e9),
-          altura: dto.altura,
-          largura: dto.largura,
-          moldurasSelecionadas: dto.moldurasSelecionadas,
-          materiaisSelecionados: dto.materiaisSelecionados,
-          espessuraPaspatur: dto.espessuraPaspatur,
-          medidaFornecidaCliente: dto.medidaFornecidaCliente,
-          limpezaSelecionada: dto.limpezaSelecionada,
-          valorCalculado: resultadoCalculo.total,
-          detalhesCalculo: resultadoCalculo.detalhes,
-          acrescimo_cm: dto.acrescimo_cm,
-          quantidade: 1, // cada quadro tem quantidade 1 (já adicionado quantidadeNum vezes)
-        };
-
-        setQuadrosDoPedido((quadrosAtuais) => [...quadrosAtuais, novoQuadro]);
-      }
-
-      setFormQuadro(() => ({
-        ...estadoInicialFormQuadro,
-        resumoDoQuadro: `${quantidadeNum}x Quadro ${alturaNum}x${larguraNum} adicionado(s)! Valor unitário: R$ ${resultadoCalculo.total.toFixed(
-          2
-        )} | Total: R$ ${(resultadoCalculo.total * quantidadeNum).toFixed(2)}`,
-      }));
-    } catch (err: unknown) {
-      console.error("Erro ao calcular/adicionar quadro:", err);
-      alert("Erro ao calcular o preço. Verifique o console.");
+      setQuadrosDoPedido((prev) => [...prev, novoQuadro]);
+      handleLimparCampos();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao calcular quadro final.");
+    } finally {
+      setIsLoading(false);
     }
   }, [formQuadro]);
 
-  const handleDeleteQuadro = (indexParaRemover: number) => {
-    setQuadrosDoPedido((quadrosAtuais) =>
-      quadrosAtuais.filter((_, index) => index !== indexParaRemover)
-    );
-  };
+  // --- Ações do Pedido ---
 
-  // ao carregar um pedido p edição aplica a flag
-  useEffect(() => {
-    const carregarPedidoParaEdicao = async (id: string) => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const pedido = await fetchPedidoById(Number(id));
-
-        setAtendente(pedido.atendente);
-        setCliente(pedido.clienteNome);
-        setTelefone(pedido.clienteTelefone);
-        setObservacoes(pedido.observacoes);
-        setCondicaoPagamento(pedido.condicao_pagamento || "");
-        setQuadrosDoPedido(pedido.quadros);
-
-        const valorCalculado = pedido.quadros.reduce(
-          (acc, q) => acc + q.valorCalculado,
-          0
-        );
-        setValorTotalPedido(valorCalculado);
-
-        if (pedido.valor_final_salvo !== valorCalculado) {
-          setValorFinalManual(
-            pedido.valor_final_salvo ? Number(pedido.valor_final_salvo) : null
-          );
-        } else {
-          setValorFinalManual(null);
-        }
-
-        setOcultarValoresUnitarios(pedido.ocultar_valores_unitarios ?? false);
-
-        setIsEditing(true);
-      } catch (err) {
-        console.error("Erro ao carregar pedido:", err);
-        setError("Pedido não encontrado. Voltando para um novo orçamento.");
-        navigate("/orcamento");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (pedidoId) {
-      carregarPedidoParaEdicao(pedidoId);
-    } else {
-      handleLimparPedido(false);
-      setIsEditing(false);
-      setIsLoading(false);
-    }
-  }, [pedidoId, navigate]);
-
-  const handleLimparPedido = (navegar = true) => {
-    setAtendente("");
-    setCliente("");
-    setTelefone("");
-    setObservacoes("");
-    setQuadrosDoPedido([]);
-    setFormQuadro(estadoInicialFormQuadro);
-    setValorFinalManual(null);
-    setError(null);
-
-    setIsEditing(false);
-    if (navegar && pedidoId) {
-      navigate("/orcamento");
+  const handleDeleteQuadro = (id: number) => {
+    if (confirm("Remover este quadro do pedido?")) {
+      setQuadrosDoPedido((prev) => prev.filter((q) => q.id !== id));
     }
   };
 
-  const handleSalvarPedido = useCallback(async () => {
-    if (!atendente || !cliente) {
-      alert("Atendente e Cliente são obrigatórios.");
-      return;
+  const handleLimparPedido = () => {
+    if (confirm("Limpar todo o pedido?")) {
+      setQuadrosDoPedido([]);
+      setValorFinalManual(null);
+      setAtendente("");
+      setCliente("");
+      setTelefone("");
+      setObservacoes("");
+      setCondicaoPagamento("");
     }
-    if (quadrosDoPedido.length === 0) {
-      alert("Adicione pelo menos um quadro ao pedido.");
-      return;
-    }
+  };
+
+  const valorTotalPedido = quadrosDoPedido.reduce((acc, q) => acc + q.valorCalculado, 0);
+
+  const handleSalvarPedido = async () => {
+    if (quadrosDoPedido.length === 0) return alert("Adicione quadros ao pedido.");
+    if (!atendente || !cliente) return alert("Preencha Atendente e Cliente.");
 
     setIsSalvando(true);
-
-    const quadrosParaSalvar = quadrosDoPedido.map((q) => ({
-      ...q,
-      valorCalculado: q.valorCalculado,
-    }));
-
-    const dadosBase = {
-      observacoes: observacoes,
-      condicao_pagamento: condicaoPagamento,
-      quadros: quadrosParaSalvar,
-      valor_final_calculado: valorTotalPedido,
-      valor_final_manual: valorFinalManual ?? undefined,
-      ocultar_valores_unitarios: ocultarValoresUnitarios,
-    };
-
     try {
-      let resposta;
-
       if (isEditing && pedidoId) {
-        const updatePayload: PedidoUpdateDto = { ...dadosBase };
-        resposta = await updatePedido(Number(pedidoId), updatePayload);
+        // --- Atualização (PUT) ---
+        const updateDto: PedidoUpdateDto = {
+            observacoes,
+            condicao_pagamento: condicaoPagamento,
+            quadros: quadrosDoPedido,
+            valor_final_calculado: valorTotalPedido,
+            valor_final_manual: valorFinalManual ?? undefined,
+            ocultar_valores_unitarios: ocultarValoresUnitarios,
+        };
+        await updatePedido(Number(pedidoId), updateDto);
         alert("Pedido atualizado com sucesso!");
         navigate("/backlog");
       } else {
-        const createPayload: PedidoApiDto = {
-          ...dadosBase,
+        // --- Criação (POST) ---
+        const dto: PedidoApiDto = {
           nomeAtendente: atendente,
           nomeCliente: cliente,
           telefoneCliente: telefone,
+          observacoes,
+          condicao_pagamento: condicaoPagamento,
+          quadros: quadrosDoPedido,
+          valor_final_calculado: valorTotalPedido,
+          valor_final_manual: valorFinalManual ?? undefined,
+          ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
 
-        resposta = await salvarPedido(createPayload);
-        alert(`Pedido ${resposta.numeroPedido} salvo com sucesso!`);
-
-        if (resposta.pdf_pedido_url) {
-          try {
-            const pdfBase64 = await fetchPdfBase64(resposta.pedidoId, "pdf");
-            const link = document.createElement("a");
-            link.href = `data:application/pdf;base64,${pdfBase64}`;
-            link.download = `pedido_${resposta.numeroPedido}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          } catch (downloadError) {
-            console.warn("Erro ao baixar PDF automático:", downloadError);
-            alert("Pedido salvo! O PDF pode ser baixado no Backlog.");
-          }
-        }
-        handleLimparPedido(false);
-      }
-    } catch (error: unknown) {
-      let serverMsg = "Erro desconhecido";
-
-      if (typeof error === "object" && error !== null && "response" in error) {
-        const axiosError = error as { response?: { data?: unknown } };
-        const data = axiosError.response?.data;
-
-        if (typeof data === "string") {
-          serverMsg = data;
-        } else if (typeof data === "object" && data !== null) {
-          if ("message" in data) {
-            const msgProp = (data as { message: unknown }).message;
-
-            if (Array.isArray(msgProp)) {
-              serverMsg = msgProp.join(", ");
-            } else if (typeof msgProp === "string") {
-              serverMsg = msgProp;
+        const response = await salvarPedido(dto);
+        
+        // --- Geração de PDF automática ao salvar ---
+        if (response.pdf_pedido_url) {
+            // Tenta abrir o PDF gerado pelo backend
+            window.open(response.pdf_pedido_url, "_blank");
+        } else if (response.pedidoId) {
+             // Fallback: Tenta gerar na hora se não veio URL
+            try {
+                const pdfBase64 = await fetchPdfBase64(response.pedidoId, "pedido");
+                const blob = b64toBlob(pdfBase64, "application/pdf");
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank");
+            } catch (e) {
+                console.error("Erro ao abrir PDF pós-salvamento", e);
             }
-          }
         }
-      } else if (error instanceof Error) {
-        serverMsg = error.message;
+        
+        alert(`Pedido #${response.numeroPedido} salvo com sucesso!`);
+        handleLimparPedido();
       }
-
-      console.error("Erro ao salvar:", error);
-      alert(`Erro ao salvar o pedido: ${serverMsg}`);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao salvar pedido.");
     } finally {
       setIsSalvando(false);
     }
-  }, [
-    atendente,
-    cliente,
-    quadrosDoPedido,
-    observacoes,
-    condicaoPagamento,
-    valorTotalPedido,
-    valorFinalManual,
-    ocultarValoresUnitarios,
-    isEditing,
-    pedidoId,
-    navigate,
-    telefone,
-    handleLimparPedido,
-  ]);
+  };
 
-  if (isLoading) {
-    return (
-      <div className="container-principal text-center mt-5">
-        <h2>Carregando Dados...</h2>
-      </div>
-    );
+  // Função utilitária para converter base64 em Blob (caso precise gerar PDF localmente)
+  const b64toBlob = (b64Data: string, contentType = "", sliceSize = 512) => {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      const slice = byteCharacters.slice(offset, offset + sliceSize);
+      const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+    return new Blob(byteArrays, { type: contentType });
+  };
+
+
+  if (isLoading && !moldurasList.length) {
+    return <div className="page-content"><div className="container">Carregando sistema...</div></div>;
   }
-
   if (error) {
-    return (
-      <div className="container-principal text-center mt-5">
-        <h2 className="text-danger">Erro de Conexão</h2>
-        <p>{error}</p>
-      </div>
-    );
+    return <div className="page-content"><div className="container text-danger">{error}</div></div>;
   }
 
   return (
     <div className="page-content">
-      <div className="container-principal">
+      <div className="container">
+        <h1 className="page-title">
+            {isEditing ? `Editando Pedido #${pedidoId}` : "Novo Orçamento"}
+        </h1>
+
         <OrcamentoForm
           moldurasList={moldurasList}
           materiaisList={materiaisList}
@@ -464,14 +413,19 @@ export function OrcamentoPage() {
           materiaisDoQuadro={formQuadro.materiaisDoQuadro}
           espessuraPaspatur={formQuadro.espessuraPaspatur}
           isPaspaturVisivel={formQuadro.isPaspaturVisivel}
-          acrescimo={formQuadro.acrescimo}
-          quantidade={formQuadro.quantidade}
           resumoDoQuadro={formQuadro.resumoDoQuadro}
+          acrescimo={formQuadro.acrescimo}
+          quantidade={formQuadro.quantidade} // Passando o valor
+          
           onAtendenteChange={setAtendente}
           onClienteChange={setCliente}
           onTelefoneChange={setTelefone}
-          onAlturaChange={(v) => setFormQuadro((f) => ({ ...f, altura: v }))}
-          onLarguraChange={(v) => setFormQuadro((f) => ({ ...f, largura: v }))}
+          onAlturaChange={(v) =>
+            setFormQuadro((f) => ({ ...f, altura: v }))
+          }
+          onLarguraChange={(v) =>
+            setFormQuadro((f) => ({ ...f, largura: v }))
+          }
           onMedidaClienteChange={(v) =>
             setFormQuadro((f) => ({ ...f, medidaCliente: v }))
           }
@@ -491,9 +445,11 @@ export function OrcamentoPage() {
           onAdicionarQuadro={handleAdicionarQuadro}
           condicaoPagamento={condicaoPagamento}
           onCondicaoPagamentoChange={setCondicaoPagamento}
-          onQuantidadeChange={function (): void {
-            throw new Error("Function not implemented.");
-          }}
+          
+          // --- CORREÇÃO AQUI: Implementando a função que estava faltando ---
+          onQuantidadeChange={(v) =>
+            setFormQuadro((f) => ({ ...f, quantidade: v }))
+          }
         />
 
         <ResumoPedido
