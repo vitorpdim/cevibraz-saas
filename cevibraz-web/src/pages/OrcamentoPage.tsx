@@ -349,7 +349,7 @@ export function OrcamentoPage() {
         } else if (response.pedidoId) {
              // Fallback: Tenta gerar na hora se não veio URL
             try {
-                const pdfBase64 = await fetchPdfBase64(response.pedidoId, "pedido");
+                const pdfBase64 = await fetchPdfBase64(response.pedidoId, "pdf");
                 const blob = b64toBlob(pdfBase64, "application/pdf");
                 const url = URL.createObjectURL(blob);
                 window.open(url, "_blank");
