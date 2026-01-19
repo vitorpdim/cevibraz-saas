@@ -9,17 +9,33 @@ import {
 } from 'class-validator';
 
 export class QuadroDto {
+  @IsNumber()
   altura: number;
+
+  @IsNumber()
   largura: number;
+
   moldurasSelecionadas: string[];
   materiaisSelecionados: string[];
-  espessuraPaspatur: number;
-  medidaFornecidaCliente: boolean;
-  limpezaSelecionada: boolean;
-  valorCalculado: number;
-  acrescimo_cm?: number;
-  @IsOptional()
+
   @IsNumber()
+  espessuraPaspatur: number;
+
+  @IsBoolean()
+  medidaFornecidaCliente: boolean;
+
+  @IsBoolean()
+  limpezaSelecionada: boolean;
+
+  @IsNumber()
+  valorCalculado: number;
+
+  @IsNumber()
+  @IsOptional()
+  acrescimo_cm?: number;
+
+  @IsNumber()
+  @IsOptional()
   quantidade?: number;
 }
 
@@ -59,7 +75,6 @@ export class CreatePedidoDto {
   @IsNumber()
   valor_final_manual?: number;
 
-  // NOVO: preference para ocultar preços unitários no PDF
   @IsOptional()
   @IsBoolean()
   ocultar_valores_unitarios?: boolean;
@@ -84,7 +99,6 @@ export class UpdatePedidoDto {
   @IsNumber()
   valor_final_manual?: number;
 
-  // NOVO
   @IsOptional()
   @IsBoolean()
   ocultar_valores_unitarios?: boolean;
@@ -122,7 +136,6 @@ export interface GrupoQuadro {
   detalhes: QuadroParaPdf;
 }
 
-// Opcional: retorno usado pelo frontend para edição
 export interface PedidoParaEdicao {
   id: number;
   atendente: string;
