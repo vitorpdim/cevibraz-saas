@@ -60,7 +60,6 @@ export class PedidosService {
       quadros,
       valor_final_calculado,
       valor_final_manual,
-      // novo
       ocultar_valores_unitarios,
     } = dto;
 
@@ -143,7 +142,6 @@ export class PedidosService {
         throw new NotFoundException('Pedido não encontrado.');
       }
 
-      // remove quadros antigos e salva novos
       await manager.delete(Quadro, { pedido: { id: id } });
       const quadrosParaPdf = await this.salvarQuadrosParaPedido(
         manager,
@@ -229,6 +227,7 @@ export class PedidosService {
         );
 
         const acrescimoNum = Number(q.acrescimo_cm ?? 0);
+        const quantidadeNum = Number(q.quantidade ?? 1);
 
         const dtoSimulado: CalcularQuadroDto = {
           altura: Number(q.altura_cm),
@@ -255,7 +254,8 @@ export class PedidosService {
           espessuraPaspatur: dtoSimulado.espessuraPaspatur,
           valorCalculado: calculo.total,
           detalhesCalculo: calculo.detalhes,
-          acrescimo_cm: dtoSimulado.acrescimo_cm ?? 0,
+          acrescimo_cm: acrescimoNum,
+          quantidade: quantidadeNum,
         };
       }),
     );
@@ -267,7 +267,7 @@ export class PedidosService {
       observacoes: pedido.observacoes,
       condicao_pagamento: pedido.condicao_pagamento,
       quadros: quadrosParaAppJs,
-      valor_final_salvo: pedido.valor_final,
+      valor_final_salvo: Number(pedido.valor_final),
       ocultar_valores_unitarios: pedido.ocultar_valores_unitarios ?? false,
     };
   }
@@ -281,7 +281,6 @@ export class PedidosService {
   }
 
   async updateStatus(id: number, dto: UpdateStatusDto) {
-    // Buscar pedido completo com relações para possível baixa de estoque
     const pedido = await this.pedidosRepository.findOne({
       where: { id },
       relations: [
@@ -297,12 +296,10 @@ export class PedidosService {
       throw new NotFoundException('Pedido não encontrado.');
     }
 
-    // Verifica gatilho de Baixa (Mudou para "Já Feito")
     if (dto.status === 'Já Feito' && pedido.status !== 'Já Feito') {
       await this.realizarBaixaDeEstoque(pedido);
     }
 
-    // Atualiza o status
     const result = await this.entityManager.update(Pedido, id, {
       status: dto.status,
     });
@@ -350,14 +347,17 @@ export class PedidosService {
     const quadrosParaPdf: QuadroParaPdf[] = [];
 
     for (const quadroDto of quadrosDto) {
+      const acrescimoValue = Number(quadroDto.acrescimo_cm ?? 0);
+      const quantidadeValue = Number(quadroDto.quantidade ?? 1);
+
       const novoQuadro = manager.create(Quadro, {
         pedido: pedido,
         altura_cm: quadroDto.altura,
         largura_cm: quadroDto.largura,
-        acrescimo_cm: quadroDto.acrescimo_cm ?? 0,
+        acrescimo_cm: acrescimoValue,
         medida_fornecida_cliente: quadroDto.medidaFornecidaCliente,
         limpeza_flag: quadroDto.limpezaSelecionada,
-        quantidade: quadroDto.quantidade || 1,
+        quantidade: quantidadeValue,
       });
       await manager.save(novoQuadro);
 
@@ -422,7 +422,7 @@ export class PedidosService {
         moldurasSelecionadas: quadroDto.moldurasSelecionadas,
         materiaisSelecionados: quadroDto.materiaisSelecionados,
         espessuraPaspatur: quadroDto.espessuraPaspatur,
-        acrescimo_cm: quadroDto.acrescimo_cm ?? 0,
+        acrescimo_cm: acrescimoValue,
       });
 
       novoQuadro.valor_calculado = detalhesCalculo.total;
@@ -434,7 +434,7 @@ export class PedidosService {
         id: novoQuadro.id,
         altura_cm: novoQuadro.altura_cm,
         largura_cm: novoQuadro.largura_cm,
-        acrescimo_cm: novoQuadro.acrescimo_cm,
+        acrescimo_cm: acrescimoValue,
         molduras: moldurasSalvas,
         materiais: materiaisSalvos,
         detalhesCalculo: detalhesCalculo,
@@ -452,7 +452,7 @@ export class PedidosService {
     for (const quadro of pedido.quadros) {
       const quantidadeQuadros = quadro.quantidade || 1;
 
-      // 1. Baixar Molduras
+      // 1. baixa molduras
       const perimetroMetros =
         ((Number(quadro.altura_cm) + Number(quadro.largura_cm)) * 2) / 100;
       const consumoUnitario = perimetroMetros * 1.1;
@@ -475,7 +475,7 @@ export class PedidosService {
         }
       }
 
-      // 2. Baixar Materiais
+      // 2. baixa materiais
       const areaM2 =
         (Number(quadro.altura_cm) * Number(quadro.largura_cm)) / 10000;
 
