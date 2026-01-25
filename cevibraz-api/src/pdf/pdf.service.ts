@@ -31,8 +31,8 @@ export class PdfService implements OnModuleInit {
   private readonly assetsDir: string;
 
   constructor() {
-    // APONTA PARA PASTA RAIZ
-    this.storageDir = path.join(__dirname, '..', '..', '..', 'storage');
+    // APONTA PARA PASTA RAIZ (2 níveis acima, não 3)
+    this.storageDir = path.join(__dirname, '..', '..', 'storage');
     this.pdfDir = path.join(this.storageDir, 'pdfs');
     this.assetsDir = path.join(__dirname, '..', 'assets');
   }
