@@ -27,7 +27,6 @@ async function bootstrap() {
   const storagePath = join(rootDir, 'storage');
 
   app.use('/static', express.static(storagePath));
-  app.use('/static', express.static(join(storagePath, 'molduras')));
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
