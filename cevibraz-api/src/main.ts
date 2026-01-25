@@ -23,10 +23,11 @@ async function bootstrap() {
     }),
   );
 
-  const rootDir = join(__dirname, '..');
+  const rootDir = process.cwd();
   const storagePath = join(rootDir, 'storage');
 
   app.use('/static', express.static(storagePath));
+  app.use('/static', express.static(join(storagePath, 'molduras')));
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
