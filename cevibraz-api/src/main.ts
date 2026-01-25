@@ -10,11 +10,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:4173',
-      process.env.FRONTEND_URL || 'https://cevibraz-web.vercel.app',
-    ],
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
@@ -27,9 +23,15 @@ async function bootstrap() {
     }),
   );
 
-  const publicPath = join(__dirname, '..', 'static');
-  app.use('/static', express.static(publicPath));
+  // IMAGENS E PDFs
+  const pdfPath = join(__dirname, '..', 'static');
+  const imgPath = join(__dirname, '..', 'storage');
 
-  await app.listen(configService.get<number>('PORT', 3000));
+  app.use('/static', express.static(pdfPath));
+  app.use('/static', express.static(imgPath));
+
+  const port = configService.get<number>('PORT', 3000);
+  await app.listen(port);
+  console.log(`🚀 API rodando na porta ${port}`);
 }
 bootstrap();
