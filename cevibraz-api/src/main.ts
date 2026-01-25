@@ -23,15 +23,12 @@ async function bootstrap() {
     }),
   );
 
-  // IMAGENS E PDFs
-  const pdfPath = join(__dirname, '..', 'static');
-  const imgPath = join(__dirname, '..', 'storage');
-
-  app.use('/static', express.static(pdfPath));
-  app.use('/static', express.static(imgPath));
+  // SERVE TUDO DA PASTA STORAGE (imagens E PDFs)
+  const storagePath = join(__dirname, '..', '..', 'storage');
+  app.use('/static', express.static(storagePath));
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
-  console.log(`🚀 API rodando na porta ${port}`);
+  console.log(`API rodando na porta: ${port}`);
 }
 bootstrap();
