@@ -10,7 +10,7 @@ interface ResumoPedidoProps {
   onObservacoesChange: (value: string) => void;
   onLimparPedido: () => void;
   onSalvarPedido: () => void;
-  onDeleteQuadro: (index: number) => void;
+  onDeleteQuadro: (id: number) => void;
   onValorFinalManualChange?: (valor: number | null) => void;
   isEditing: boolean;
   isSalvando: boolean;
@@ -98,7 +98,7 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
           <p className="empty-state">Nenhum quadro adicionado ainda.</p>
         ) : (
           <ul className="quadros-list">
-            {quadros.map((quadro, index) => (
+            {quadros.map((quadro) => (
               <li
                 key={quadro.id}
                 className="quadro-item"
@@ -114,7 +114,7 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
                 </div>
                 <button
                   className="btn-icon-danger"
-                  onClick={() => onDeleteQuadro(index)}
+                  onClick={() => onDeleteQuadro(quadro.id)}
                   aria-label="Excluir quadro"
                   style={{ marginTop: "4px" }}
                 >
