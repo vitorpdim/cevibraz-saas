@@ -23,8 +23,9 @@ async function bootstrap() {
     }),
   );
 
-  // SERVE DA PASTA STORAGE NA RAIZ
-  const storagePath = join(__dirname, '..', '..', 'storage');
+  const rootDir = join(__dirname, '..');
+  const storagePath = join(rootDir, 'storage');
+
   app.use('/static', express.static(storagePath));
 
   const port = configService.get<number>('PORT', 3000);
