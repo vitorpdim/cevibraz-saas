@@ -27,11 +27,9 @@ async function bootstrap() {
     }),
   );
 
-  const storagePath = configService.get<string>(
-    'STORAGE_PATH',
-    join(__dirname, '..', 'storage'),
-  );
-  app.use('/static', express.static(storagePath));
+  const publicPath = join(__dirname, '..', 'static');
+  app.use('/static', express.static(publicPath));
+
   await app.listen(configService.get<number>('PORT', 3000));
 }
 bootstrap();

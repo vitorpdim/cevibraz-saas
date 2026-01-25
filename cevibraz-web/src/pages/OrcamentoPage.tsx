@@ -21,6 +21,9 @@ import { OrcamentoForm } from "../components/OrcamentoForm";
 import { ResumoPedido } from "../components/ResumoPedido";
 import { useParams, useNavigate } from "react-router-dom";
 
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://cevibraz-api.onrender.com";
+
 const estadoInicialFormQuadro = {
   altura: "",
   largura: "",
@@ -31,7 +34,7 @@ const estadoInicialFormQuadro = {
   espessuraPaspatur: "",
   isPaspaturVisivel: false,
   acrescimo: "",
-  quantidade: "1", // Campo Novo
+  quantidade: "1",
   resumoDoQuadro: "Preencha os campos para ver o resumo.",
 };
 
@@ -40,28 +43,20 @@ export function OrcamentoPage() {
   const [materiaisList, setMateriaisList] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Campos do Cabeçalho
   const [atendente, setAtendente] = useState("");
   const [cliente, setCliente] = useState("");
   const [telefone, setTelefone] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [condicaoPagamento, setCondicaoPagamento] = useState("");
   const [ocultarValoresUnitarios, setOcultarValoresUnitarios] = useState(false);
-
-  // Estado do Formulário do Quadro Atual
   const [formQuadro, setFormQuadro] = useState(estadoInicialFormQuadro);
-
-  // Lista de Quadros já adicionados ao Pedido
   const [quadrosDoPedido, setQuadrosDoPedido] = useState<QuadroNoEstado[]>([]);
   const [valorFinalManual, setValorFinalManual] = useState<number | null>(null);
-
   const [isSalvando, setIsSalvando] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const { pedidoId } = useParams();
   const navigate = useNavigate();
 
-  // --- Carregamento Inicial ---
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -73,7 +68,7 @@ export function OrcamentoPage() {
         setMoldurasList(molduras);
         setMateriaisList(materiais);
 
-        // Se tiver ID na URL, carrega o pedido para edição
+        // se tiver ID na url, carrega o pedido p ediçao
         if (pedidoId) {
           setIsEditing(true);
           const pedido = await fetchPedidoById(Number(pedidoId));
@@ -84,9 +79,10 @@ export function OrcamentoPage() {
           setCondicaoPagamento(pedido.condicao_pagamento || "");
           setQuadrosDoPedido(pedido.quadros);
           setValorFinalManual(
-            pedido.valor_final_salvo !== pedido.quadros.reduce((acc, q) => acc + q.valorCalculado, 0)
+            pedido.valor_final_salvo !==
+              pedido.quadros.reduce((acc, q) => acc + q.valorCalculado, 0)
               ? pedido.valor_final_salvo
-              : null
+              : null,
           );
           setOcultarValoresUnitarios(pedido.ocultar_valores_unitarios || false);
         }
@@ -100,9 +96,9 @@ export function OrcamentoPage() {
     carregarDados();
   }, [pedidoId]);
 
-  // --- Lógica do Formulário ---
+  // --- logica do forms ---
 
-  // Cálculo automático do Resumo enquanto digita
+  // calc automatico do resumo enquanto digita
   useEffect(() => {
     const calcularResumo = async () => {
       const {
@@ -126,7 +122,7 @@ export function OrcamentoPage() {
       }
 
       const materiaisSelecionados = Object.keys(materiaisDoQuadro).filter(
-        (k) => materiaisDoQuadro[k] > 0
+        (k) => materiaisDoQuadro[k] > 0,
       );
 
       const dto: CalcularQuadroDto = {
@@ -134,7 +130,9 @@ export function OrcamentoPage() {
         largura: parseFloat(largura),
         moldurasSelecionadas: moldurasDoQuadro,
         materiaisSelecionados: materiaisSelecionados,
-        espessuraPaspatur: isPaspaturVisivel ? parseFloat(espessuraPaspatur) || 0 : 0,
+        espessuraPaspatur: isPaspaturVisivel
+          ? parseFloat(espessuraPaspatur) || 0
+          : 0,
         medidaFornecidaCliente: medidaCliente,
         limpezaSelecionada: false,
         acrescimo_cm: parseFloat(acrescimo) || 0,
@@ -142,8 +140,8 @@ export function OrcamentoPage() {
 
       try {
         const resultado = await calcularPrecoQuadro(dto);
-        
-        // CORREÇÃO: Multiplica pelo número de quadros
+
+        // multiplica pelo numero de quadros
         const qtd = Math.max(1, parseInt(quantidade) || 1);
         const totalMultiplicado = resultado.total * qtd;
 
@@ -160,9 +158,19 @@ export function OrcamentoPage() {
       }
     };
 
-    const timer = setTimeout(calcularResumo, 500); // Debounce para não travar
+    const timer = setTimeout(calcularResumo, 500); // debounce p nao travar
     return () => clearTimeout(timer);
-  }, [formQuadro.altura, formQuadro.largura, formQuadro.moldurasDoQuadro, formQuadro.materiaisDoQuadro, formQuadro.espessuraPaspatur, formQuadro.medidaCliente, formQuadro.isPaspaturVisivel, formQuadro.acrescimo, formQuadro.quantidade]);
+  }, [
+    formQuadro.altura,
+    formQuadro.largura,
+    formQuadro.moldurasDoQuadro,
+    formQuadro.materiaisDoQuadro,
+    formQuadro.espessuraPaspatur,
+    formQuadro.medidaCliente,
+    formQuadro.isPaspaturVisivel,
+    formQuadro.acrescimo,
+    formQuadro.quantidade,
+  ]);
 
   const handleAddMoldura = () => {
     const { molduraSelecionada, moldurasDoQuadro } = formQuadro;
@@ -171,7 +179,7 @@ export function OrcamentoPage() {
     setFormQuadro((prev) => ({
       ...prev,
       moldurasDoQuadro: [...moldurasDoQuadro, molduraSelecionada],
-      molduraSelecionada: "", // Limpa seleção atual
+      molduraSelecionada: "",
     }));
   };
 
@@ -192,9 +200,9 @@ export function OrcamentoPage() {
         delete novosMateriais[materialNome];
       }
 
-      // Lógica do Paspatur
+      // logica do paspatur
       const temPaspatur = Object.keys(novosMateriais).some((m) =>
-        m.toLowerCase().includes("paspatur")
+        m.toLowerCase().includes("paspatur"),
       );
 
       return {
@@ -210,7 +218,7 @@ export function OrcamentoPage() {
     setFormQuadro(estadoInicialFormQuadro);
   };
 
-  // --- Adicionar Quadro ao Pedido ---
+  // --- add quadro no pedido ---
   const handleAdicionarQuadro = useCallback(async () => {
     const {
       altura,
@@ -225,7 +233,10 @@ export function OrcamentoPage() {
     } = formQuadro;
 
     if (!altura || !largura) return alert("Preencha as dimensões.");
-    if (moldurasDoQuadro.length === 0 && Object.keys(materiaisDoQuadro).length === 0) {
+    if (
+      moldurasDoQuadro.length === 0 &&
+      Object.keys(materiaisDoQuadro).length === 0
+    ) {
       return alert("Adicione pelo menos uma moldura ou material.");
     }
     if (isPaspaturVisivel && !espessuraPaspatur) {
@@ -233,7 +244,7 @@ export function OrcamentoPage() {
     }
 
     const materiaisSelecionados = Object.keys(materiaisDoQuadro).filter(
-      (k) => materiaisDoQuadro[k] > 0
+      (k) => materiaisDoQuadro[k] > 0,
     );
 
     const dto: CalcularQuadroDto = {
@@ -241,7 +252,9 @@ export function OrcamentoPage() {
       largura: parseFloat(largura),
       moldurasSelecionadas: moldurasDoQuadro,
       materiaisSelecionados: materiaisSelecionados,
-      espessuraPaspatur: isPaspaturVisivel ? parseFloat(espessuraPaspatur) || 0 : 0,
+      espessuraPaspatur: isPaspaturVisivel
+        ? parseFloat(espessuraPaspatur) || 0
+        : 0,
       medidaFornecidaCliente: medidaCliente,
       limpezaSelecionada: false,
       acrescimo_cm: parseFloat(acrescimo) || 0,
@@ -251,26 +264,25 @@ export function OrcamentoPage() {
       setIsLoading(true);
       const resultado = await calcularPrecoQuadro(dto);
 
-      // --- CORREÇÃO: Multiplicar pela quantidade ---
+      // --- multiplicar pela quantidade ---
       const qtd = Math.max(1, parseInt(quantidade) || 1);
       const valorTotalItem = resultado.total * qtd;
 
       const novoQuadro: QuadroNoEstado = {
-        id: Date.now(), // ID temporário p/ front
+        id: Date.now(), // ID temporário p front
         altura: parseFloat(altura),
         largura: parseFloat(largura),
         moldurasSelecionadas: moldurasDoQuadro,
         materiaisSelecionados: materiaisSelecionados,
-        espessuraPaspatur: isPaspaturVisivel ? parseFloat(espessuraPaspatur) || 0 : 0,
+        espessuraPaspatur: isPaspaturVisivel
+          ? parseFloat(espessuraPaspatur) || 0
+          : 0,
         medidaFornecidaCliente: medidaCliente,
         limpezaSelecionada: false,
-        
-        // Aqui salvamos o valor TOTAL (Unitário * Qtd)
-        valorCalculado: valorTotalItem, 
-        
-        // Salvamos a quantidade para exibir no resumo
+
+        // salva o valor TOTAL (unitario * qtd)
+        valorCalculado: valorTotalItem,
         quantidade: qtd,
-        
         detalhesCalculo: resultado.detalhes,
         acrescimo_cm: parseFloat(acrescimo) || 0,
       };
@@ -285,7 +297,7 @@ export function OrcamentoPage() {
     }
   }, [formQuadro]);
 
-  // --- Ações do Pedido ---
+  // --- ACOES DO PEDIDO ---
 
   const handleDeleteQuadro = (id: number) => {
     if (confirm("Remover este quadro do pedido?")) {
@@ -305,29 +317,31 @@ export function OrcamentoPage() {
     }
   };
 
-  const valorTotalPedido = quadrosDoPedido.reduce((acc, q) => acc + q.valorCalculado, 0);
+  const valorTotalPedido = quadrosDoPedido.reduce(
+    (acc, q) => acc + q.valorCalculado,
+    0,
+  );
 
   const handleSalvarPedido = async () => {
-    if (quadrosDoPedido.length === 0) return alert("Adicione quadros ao pedido.");
+    if (quadrosDoPedido.length === 0)
+      return alert("Adicione quadros ao pedido.");
     if (!atendente || !cliente) return alert("Preencha Atendente e Cliente.");
 
     setIsSalvando(true);
     try {
       if (isEditing && pedidoId) {
-        // --- Atualização (PUT) ---
         const updateDto: PedidoUpdateDto = {
-            observacoes,
-            condicao_pagamento: condicaoPagamento,
-            quadros: quadrosDoPedido,
-            valor_final_calculado: valorTotalPedido,
-            valor_final_manual: valorFinalManual ?? undefined,
-            ocultar_valores_unitarios: ocultarValoresUnitarios,
+          observacoes,
+          condicao_pagamento: condicaoPagamento,
+          quadros: quadrosDoPedido,
+          valor_final_calculado: valorTotalPedido,
+          valor_final_manual: valorFinalManual ?? undefined,
+          ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
         await updatePedido(Number(pedidoId), updateDto);
         alert("Pedido atualizado com sucesso!");
         navigate("/backlog");
       } else {
-        // --- Criação (POST) ---
         const dto: PedidoApiDto = {
           nomeAtendente: atendente,
           nomeCliente: cliente,
@@ -341,23 +355,26 @@ export function OrcamentoPage() {
         };
 
         const response = await salvarPedido(dto);
-        
-        // --- Geração de PDF automática ao salvar ---
         if (response.pdf_pedido_url) {
-            // Tenta abrir o PDF gerado pelo backend
-            window.open(response.pdf_pedido_url, "_blank");
+          let urlAbsoluta = response.pdf_pedido_url;
+
+          // se for caminho relativo add url base do render
+          if (!urlAbsoluta.startsWith("http")) {
+            urlAbsoluta = `${API_URL}${urlAbsoluta}`;
+          }
+
+          window.open(urlAbsoluta, "_blank");
         } else if (response.pedidoId) {
-             // Fallback: Tenta gerar na hora se não veio URL
-            try {
-                const pdfBase64 = await fetchPdfBase64(response.pedidoId, "pdf");
-                const blob = b64toBlob(pdfBase64, "application/pdf");
-                const url = URL.createObjectURL(blob);
-                window.open(url, "_blank");
-            } catch (e) {
-                console.error("Erro ao abrir PDF pós-salvamento", e);
-            }
+          try {
+            const pdfBase64 = await fetchPdfBase64(response.pedidoId, "pdf");
+            const blob = b64toBlob(pdfBase64, "application/pdf");
+            const url = URL.createObjectURL(blob);
+            window.open(url, "_blank");
+          } catch (e) {
+            console.error("Erro ao abrir PDF pós-salvamento", e);
+          }
         }
-        
+
         alert(`Pedido #${response.numeroPedido} salvo com sucesso!`);
         handleLimparPedido();
       }
@@ -369,7 +386,6 @@ export function OrcamentoPage() {
     }
   };
 
-  // Função utilitária para converter base64 em Blob (caso precise gerar PDF localmente)
   const b64toBlob = (b64Data: string, contentType = "", sliceSize = 512) => {
     const byteCharacters = atob(b64Data);
     const byteArrays = [];
@@ -385,19 +401,26 @@ export function OrcamentoPage() {
     return new Blob(byteArrays, { type: contentType });
   };
 
-
   if (isLoading && !moldurasList.length) {
-    return <div className="page-content"><div className="container">Carregando sistema...</div></div>;
+    return (
+      <div className="page-content">
+        <div className="container">Carregando sistema...</div>
+      </div>
+    );
   }
   if (error) {
-    return <div className="page-content"><div className="container text-danger">{error}</div></div>;
+    return (
+      <div className="page-content">
+        <div className="container text-danger">{error}</div>
+      </div>
+    );
   }
 
   return (
     <div className="page-content">
       <div className="container">
         <h1 className="page-title">
-            {isEditing ? `Editando Pedido #${pedidoId}` : "Novo Orçamento"}
+          {isEditing ? `Editando Pedido #${pedidoId}` : "Novo Orçamento"}
         </h1>
 
         <OrcamentoForm
@@ -415,17 +438,12 @@ export function OrcamentoPage() {
           isPaspaturVisivel={formQuadro.isPaspaturVisivel}
           resumoDoQuadro={formQuadro.resumoDoQuadro}
           acrescimo={formQuadro.acrescimo}
-          quantidade={formQuadro.quantidade} // Passando o valor
-          
+          quantidade={formQuadro.quantidade}
           onAtendenteChange={setAtendente}
           onClienteChange={setCliente}
           onTelefoneChange={setTelefone}
-          onAlturaChange={(v) =>
-            setFormQuadro((f) => ({ ...f, altura: v }))
-          }
-          onLarguraChange={(v) =>
-            setFormQuadro((f) => ({ ...f, largura: v }))
-          }
+          onAlturaChange={(v) => setFormQuadro((f) => ({ ...f, altura: v }))}
+          onLarguraChange={(v) => setFormQuadro((f) => ({ ...f, largura: v }))}
           onMedidaClienteChange={(v) =>
             setFormQuadro((f) => ({ ...f, medidaCliente: v }))
           }
@@ -445,8 +463,6 @@ export function OrcamentoPage() {
           onAdicionarQuadro={handleAdicionarQuadro}
           condicaoPagamento={condicaoPagamento}
           onCondicaoPagamentoChange={setCondicaoPagamento}
-          
-          // --- CORREÇÃO AQUI: Implementando a função que estava faltando ---
           onQuantidadeChange={(v) =>
             setFormQuadro((f) => ({ ...f, quantidade: v }))
           }
