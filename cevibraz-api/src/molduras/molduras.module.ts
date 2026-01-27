@@ -13,8 +13,11 @@ import { MoldurasController } from './molduras.controller';
     TypeOrmModule.forFeature([Moldura]),
     MulterModule.registerAsync({
       useFactory: () => {
-        // APONTA PARA A PASTA RAIZ STORAGE/MOLDURAS (2 níveis)
-        const uploadPath = join(__dirname, '..', '..', 'storage', 'molduras');
+        // Usa STORAGE_PATH da env, com fallback para desenvolvimento local
+        const uploadPath = join(
+          process.env.STORAGE_PATH || join(process.cwd(), 'storage'),
+          'molduras',
+        );
         if (!existsSync(uploadPath)) {
           mkdirSync(uploadPath, { recursive: true });
         }

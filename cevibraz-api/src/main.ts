@@ -23,8 +23,8 @@ async function bootstrap() {
     }),
   );
 
-  const rootDir = process.cwd();
-  const storagePath = join(rootDir, 'storage');
+  const storagePath =
+    process.env.STORAGE_PATH || join(process.cwd(), 'storage');
 
   app.use('/static', express.static(storagePath));
 
