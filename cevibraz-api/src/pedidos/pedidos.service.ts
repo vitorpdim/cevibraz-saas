@@ -19,6 +19,7 @@ import {
 } from './pedido.dto';
 import { PdfService } from '../pdf/pdf.service';
 import { EstoqueService } from '../estoque/services/estoque.service';
+
 interface MaxPedidoResult {
   max_num: number | null;
 }
@@ -84,7 +85,6 @@ export class PedidosService {
         condicao_pagamento: dto.condicao_pagamento,
         valor_final: valorFinalParaSalvar,
         status: 'A Fazer',
-        // salva preferência
         ocultar_valores_unitarios: ocultar_valores_unitarios ?? false,
       });
       await manager.save(novoPedido);
@@ -136,23 +136,27 @@ export class PedidosService {
     return this.entityManager.transaction(async (manager) => {
       const pedido = await manager.findOne(Pedido, {
         where: { id },
-        relations: ['cliente'],
+        relations: ['cliente', 'quadros'],
       });
       if (!pedido) {
         throw new NotFoundException('Pedido não encontrado.');
       }
 
+      // atualiza campos básicos do pedido
+      pedido.observacoes = observacoes;
+      pedido.condicao_pagamento = dto.condicao_pagamento;
+      pedido.ocultar_valores_unitarios = ocultar_valores_unitarios ?? false;
+      pedido.valor_final = valorFinalParaSalvar;
+
+      // remove todos os quadros antigos
       await manager.delete(Quadro, { pedido: { id: id } });
+
+      // recria os quadros com a nova lista (FIX: evita apagar tudo)
       const quadrosParaPdf = await this.salvarQuadrosParaPedido(
         manager,
         pedido,
         quadros,
       );
-
-      pedido.observacoes = observacoes;
-      pedido.condicao_pagamento = dto.condicao_pagamento;
-      pedido.ocultar_valores_unitarios = ocultar_valores_unitarios ?? false;
-      pedido.valor_final = valorFinalParaSalvar;
 
       this.logger.log(
         `Regerando PDFs para o pedido ${pedido.numero_pedido}...`,
@@ -429,6 +433,7 @@ export class PedidosService {
       novoQuadro.detalhes_calculo = detalhesCalculo.detalhes;
       await manager.save(novoQuadro);
 
+      // quantidade vai para o PDF
       quadrosParaPdf.push({
         ...quadroDto,
         id: novoQuadro.id,
@@ -438,6 +443,7 @@ export class PedidosService {
         molduras: moldurasSalvas,
         materiais: materiaisSalvos,
         detalhesCalculo: detalhesCalculo,
+        quantidade: quantidadeValue,
       });
     }
 
