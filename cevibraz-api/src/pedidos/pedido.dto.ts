@@ -124,8 +124,8 @@ export interface QuadroParaPdf {
   medidaFornecidaCliente: boolean;
   limpezaSelecionada: boolean;
   valorCalculado: number;
-  // NOVO
   acrescimo_cm?: number;
+  quantidade?: number;
   molduras: { nome: string; codigo: string }[];
   materiais: { nome: string; espessura_paspatur_cm: number | undefined }[];
   detalhesCalculo: { total: number; detalhes: string[] };
