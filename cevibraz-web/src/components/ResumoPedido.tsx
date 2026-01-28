@@ -35,6 +35,10 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     onOcultarValoresUnitariosChange,
   } = props;
 
+  // ✅ DEBUG CRÍTICO
+  console.log("📋 ResumoPedido renderizando com quadros:", quadros);
+  console.log("📋 Quantidade de quadros:", quadros?.length || 0);
+
   const formatarDescricaoQuadro = (quadro: QuadroNoEstado): React.ReactNode => {
     if (quadro.detalhesCalculo && quadro.detalhesCalculo.length > 0) {
       return (
@@ -59,10 +63,10 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     }
 
     let desc = `${quadro.altura}cm x ${quadro.largura}cm. `;
-    if (quadro.moldurasSelecionadas.length > 0) {
+    if (quadro.moldurasSelecionadas?.length > 0) {
       desc += `Molduras: ${quadro.moldurasSelecionadas.join(", ")}. `;
     }
-    if (quadro.materiaisSelecionados.length > 0) {
+    if (quadro.materiaisSelecionados?.length > 0) {
       desc += `Materiais: ${quadro.materiaisSelecionados.join(", ")}. `;
     }
     if (quadro.espessuraPaspatur > 0) {
@@ -89,16 +93,19 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
   const valorFinalExibido = valorFinalManual ?? valorTotalPedido;
   const valorInput = valorFinalManual ?? valorTotalPedido;
 
+  // ✅ PROTEÇÃO: Garantir que quadros é sempre um array
+  const quadrosSeguro = Array.isArray(quadros) ? quadros : [];
+
   return (
     <section className="card resumo-card">
       <h3>Resumo do Pedido</h3>
 
       <div className="quadros-lista">
-        {quadros.length === 0 ? (
+        {quadrosSeguro.length === 0 ? (
           <p className="empty-state">Nenhum quadro adicionado ainda.</p>
         ) : (
           <ul className="quadros-list">
-            {quadros.map((quadro) => (
+            {quadrosSeguro.map((quadro) => (
               <li
                 key={quadro.id}
                 className="quadro-item"
