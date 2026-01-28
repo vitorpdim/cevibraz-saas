@@ -142,16 +142,18 @@ export class PedidosService {
         throw new NotFoundException('Pedido não encontrado.');
       }
 
-      // atualiza campos básicos do pedido
+      // 1-- presta atencao que aqui é importante: nois atualiza os campos basicos do pedido
       pedido.observacoes = observacoes;
       pedido.condicao_pagamento = dto.condicao_pagamento;
       pedido.ocultar_valores_unitarios = ocultar_valores_unitarios ?? false;
       pedido.valor_final = valorFinalParaSalvar;
 
-      // remove todos os quadros antigos
-      await manager.delete(Quadro, { pedido: { id: id } });
+      // 2 -- limpa tudao (é uma segurança contra duplicação)
+      // remove os quadros antigos desse pedido isso garante que n tenha resto de quadros fantasmas ou duplicação
+      await manager.delete(Quadro, { pedido: { id } });
 
-      // recria os quadros com a nova lista (FIX: evita apagar tudo)
+      // 3. recriacao limpinha
+      // como a lista antiga foi limpa, nois salva a lista nova completa e o banco fica exatamente igual ao que ta na tela do usuário
       const quadrosParaPdf = await this.salvarQuadrosParaPedido(
         manager,
         pedido,
