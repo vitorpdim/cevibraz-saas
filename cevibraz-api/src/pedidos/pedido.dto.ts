@@ -7,11 +7,10 @@ import {
   IsIn,
   IsBoolean,
   ValidateNested,
-  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-// --- DTO PARA UM QUADRO INDIVIDUAL ---
+// --- DTO DO QUADRO ---
 export class QuadroDto {
   @IsNumber()
   altura: number;
@@ -19,18 +18,16 @@ export class QuadroDto {
   @IsNumber()
   largura: number;
 
-  // ✅ CORREÇÃO 1: Validação explícita para molduras
   @IsArray()
   @IsString({ each: true })
   moldurasSelecionadas: string[];
 
-  // ✅ CORREÇÃO 2: Validação explícita para materiais
   @IsArray()
   @IsString({ each: true })
   materiaisSelecionados: string[];
+  // =================================================================
 
   @IsNumber()
-  @Min(0)
   espessuraPaspatur: number;
 
   @IsBoolean()
@@ -40,21 +37,18 @@ export class QuadroDto {
   limpezaSelecionada: boolean;
 
   @IsNumber()
-  @Min(0)
   valorCalculado: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0)
   acrescimo_cm?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(1)
   quantidade?: number;
 }
 
-// --- INTERFACES AUXILIARES (NÃO VALIDADAS) ---
+// interface auxiliar (nao afeta validação, eh so pra ajuda na tipagem)
 export interface QuadroDtoWithExtras
   extends Omit<QuadroDto, 'espessuraPaspatur' | 'materiaisSelecionados'> {
   espessuraPaspatur?: number;
@@ -63,7 +57,7 @@ export interface QuadroDtoWithExtras
   acrescimo_cm?: number;
 }
 
-// --- DTO PARA CRIAR NOVO PEDIDO ---
+// --- DTO CRIAÇÃO PEDIDO ---
 export class CreatePedidoDto {
   @IsString()
   nomeAtendente: string;
@@ -79,21 +73,18 @@ export class CreatePedidoDto {
 
   @IsOptional()
   @IsString()
-  condicao_pagamento?: string;
+  condicao_pagamento: string;
 
-  // ✅ CORREÇÃO 3: Validação de objetos aninhados
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => QuadroDto)
   quadros: QuadroDto[];
 
   @IsNumber()
-  @Min(0)
   valor_final_calculado: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0)
   valor_final_manual?: number;
 
   @IsOptional()
@@ -101,28 +92,25 @@ export class CreatePedidoDto {
   ocultar_valores_unitarios?: boolean;
 }
 
-// --- DTO PARA ATUALIZAR PEDIDO ---
+// --- DTO ATUALIZAÇÃO PEDIDO ---
 export class UpdatePedidoDto {
   @IsString()
   observacoes: string;
 
   @IsOptional()
   @IsString()
-  condicao_pagamento?: string;
+  condicao_pagamento: string;
 
-  // ✅ CORREÇÃO 4: Validação de objetos aninhados aqui também
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => QuadroDto)
   quadros: QuadroDto[];
 
   @IsNumber()
-  @Min(0)
   valor_final_calculado: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0)
   valor_final_manual?: number;
 
   @IsOptional()
@@ -130,14 +118,14 @@ export class UpdatePedidoDto {
   ocultar_valores_unitarios?: boolean;
 }
 
-// --- DTO PARA ATUALIZAR STATUS ---
+// --- DTO STATUS ---
 export class UpdateStatusDto {
   @IsString()
   @IsIn(['A Fazer', 'Já Feito', 'Entregue'])
   status: 'A Fazer' | 'Já Feito' | 'Entregue';
 }
 
-// --- INTERFACES PARA PDF E RETORNO ---
+// --- INTERFACES PDF ---
 export interface QuadroParaPdf {
   id: number;
   altura: number;
@@ -164,7 +152,6 @@ export interface GrupoQuadro {
 
 export interface PedidoParaEdicao {
   id: number;
-  numero_pedido: string;
   atendente: string;
   clienteNome: string;
   clienteTelefone: string;
