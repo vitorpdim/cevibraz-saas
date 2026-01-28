@@ -77,8 +77,8 @@ export function OrcamentoPage() {
           setIsEditing(true);
           const pedido = await fetchPedidoById(Number(pedidoId));
           
-          // CORREÇÃO: Tenta pegar numero_pedido (snake_case do backend)
-          setNumeroPedidoDisplay(pedido.numero_pedido || pedido.numeroPedido || "");
+          // CORRIGIDO: Usa numero_pedido que agora existe no tipo
+          setNumeroPedidoDisplay(pedido.numero_pedido);
           
           setAtendente(pedido.atendente);
           setCliente(pedido.clienteNome);
@@ -87,7 +87,7 @@ export function OrcamentoPage() {
           setCondicaoPagamento(pedido.condicao_pagamento || "");
           
           // Formata os quadros para garantir tipos corretos
-          const quadrosFormatados = pedido.quadros.map((q: any) => ({
+          const quadrosFormatados = pedido.quadros.map((q: QuadroNoEstado) => ({
             ...q,
             quantidade: Number(q.quantidade || 1),
             valorCalculado: Number(q.valorCalculado || 0),
@@ -99,7 +99,7 @@ export function OrcamentoPage() {
           setQuadrosDoPedido(quadrosFormatados);
           
           const totalCalculado = quadrosFormatados.reduce(
-            (acc: number, q: any) => acc + q.valorCalculado,
+            (acc: number, q: QuadroNoEstado) => acc + q.valorCalculado,
             0,
           );
           const totalSalvo = Number(pedido.valor_final_salvo || 0);
@@ -355,6 +355,7 @@ export function OrcamentoPage() {
       if (isEditing && pedidoId) {
         // CORRIGIDO: Remove 'id' e garante tipos corretos
         const quadrosParaEnvio = quadrosDoPedido.map(q => ({
+          id: q.id,
           altura: Number(q.altura),
           largura: Number(q.largura),
           moldurasSelecionadas: q.moldurasSelecionadas,
@@ -380,8 +381,9 @@ export function OrcamentoPage() {
         alert(`Pedido #${numeroPedidoDisplay} atualizado com sucesso!`);
         navigate("/backlog");
       } else {
-        // CORRIGIDO: Remove 'id' dos quadros para novo pedido
+        // CORRIGIDO: Inclui 'id' dos quadros para novo pedido
         const quadrosParaEnvio = quadrosDoPedido.map(q => ({
+          id: q.id,
           altura: Number(q.altura),
           largura: Number(q.largura),
           moldurasSelecionadas: q.moldurasSelecionadas,

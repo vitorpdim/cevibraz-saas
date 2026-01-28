@@ -265,6 +265,8 @@ export class PedidosService {
     );
 
     return {
+      id: pedido.id, // ADICIONAR AQUI
+      numero_pedido: pedido.numero_pedido, // ADICIONAR AQUI
       atendente: pedido.atendente,
       clienteNome: pedido.cliente?.nome || 'Cliente Removido',
       clienteTelefone: pedido.cliente?.telefone || '',
