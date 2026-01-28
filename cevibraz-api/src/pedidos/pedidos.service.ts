@@ -504,7 +504,7 @@ export class PedidosService {
                 (consumoMat * quantidadeQuadros).toFixed(2),
               ),
               pedido_id: pedido.id,
-              descricao: `Baixa Pedido ${pedido.numero_pedido}`,
+              descricao: `Baixa pedido ${pedido.numero_pedido}`,
             });
           } catch (e) {
             this.logger.error(`Erro baixa material: ${e}`);
