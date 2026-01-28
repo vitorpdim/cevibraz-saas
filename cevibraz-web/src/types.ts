@@ -30,8 +30,9 @@ export interface CalculoResponse {
   detalhes: string[];
 }
 
+// ✅ CRÍTICO: id DEVE ser obrigatório e number
 export interface QuadroNoEstado {
-  id: number;
+  id: number; // ✅ NUNCA pode ser undefined!
   altura: number;
   largura: number;
   moldurasSelecionadas: string[];
@@ -42,7 +43,7 @@ export interface QuadroNoEstado {
   valorCalculado: number;
   detalhesCalculo?: string[];
   acrescimo_cm?: number;
-  quantidade?: number; // NOVO
+  quantidade?: number;
 }
 
 // p criar/atualizar pedido envia p api
@@ -86,7 +87,7 @@ export interface PedidoBacklog {
 // p edição carregar na tela de orçamento
 export interface PedidoParaEdicao {
   id: number;
-  numero_pedido: string; // ADICIONAR AQUI
+  numero_pedido: string;
   atendente: string;
   clienteNome: string;
   clienteTelefone: string;
@@ -99,17 +100,6 @@ export interface PedidoParaEdicao {
 
 export interface SimpleApiResponse {
   message: string;
-}
-
-
-export interface PedidoParaEdicao {
-  id: number;
-  atendente: string;
-  clienteNome: string;
-  clienteTelefone: string;
-  observacoes: string;
-  quadros: QuadroNoEstado[];
-  valor_final_salvo: number;
 }
 
 export interface CreateMolduraDto {

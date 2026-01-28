@@ -35,6 +35,10 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     onOcultarValoresUnitariosChange,
   } = props;
 
+  // ✅ DEBUG CRÍTICO
+  console.log("📋 ResumoPedido renderizando com quadros:", quadros);
+  console.log("📋 Quantidade de quadros:", quadros?.length || 0);
+
   const formatarDescricaoQuadro = (quadro: QuadroNoEstado): React.ReactNode => {
     if (quadro.detalhesCalculo && quadro.detalhesCalculo.length > 0) {
       return (
@@ -59,10 +63,10 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
     }
 
     let desc = `${quadro.altura}cm x ${quadro.largura}cm. `;
-    if (quadro.moldurasSelecionadas.length > 0) {
+    if (quadro.moldurasSelecionadas?.length > 0) {
       desc += `Molduras: ${quadro.moldurasSelecionadas.join(", ")}. `;
     }
-    if (quadro.materiaisSelecionados.length > 0) {
+    if (quadro.materiaisSelecionados?.length > 0) {
       desc += `Materiais: ${quadro.materiaisSelecionados.join(", ")}. `;
     }
     if (quadro.espessuraPaspatur > 0) {
@@ -89,39 +93,64 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
   const valorFinalExibido = valorFinalManual ?? valorTotalPedido;
   const valorInput = valorFinalManual ?? valorTotalPedido;
 
+  // ✅ PROTEÇÃO: Garantir que quadros é sempre um array
+  const quadrosSeguro = Array.isArray(quadros) ? quadros : [];
+
   return (
     <section className="card resumo-card">
       <h3>Resumo do Pedido</h3>
 
       <div className="quadros-lista">
-        {quadros.length === 0 ? (
+        {quadrosSeguro.length === 0 ? (
           <p className="empty-state">Nenhum quadro adicionado ainda.</p>
         ) : (
           <ul className="quadros-list">
-            {quadros.map((quadro) => (
-              <li
-                key={quadro.id}
-                className="quadro-item"
-                style={{ alignItems: "flex-start" }}
-              >
-                <div className="quadro-info">
-                  <span className="quadro-desc">
-                    {formatarDescricaoQuadro(quadro)}
-                  </span>
-                  <span className="quadro-valor" style={{ marginTop: "8px" }}>
-                    Total: R$ {quadro.valorCalculado.toFixed(2)}
-                  </span>
-                </div>
-                <button
-                  className="btn-icon-danger"
-                  onClick={() => onDeleteQuadro(quadro.id)}
-                  aria-label="Excluir quadro"
-                  style={{ marginTop: "4px" }}
+            {quadrosSeguro.map((quadro) => {
+              // ✅ DEBUG: Log do quadro COMPLETO
+              console.log(`📦 Mapeando quadro:`, quadro);
+              console.log(`  - ID do quadro:`, quadro.id, `Tipo:`, typeof quadro.id);
+
+              return (
+                <li
+                  key={`quadro-${quadro.id}`}
+                  className="quadro-item"
+                  style={{ alignItems: "flex-start" }}
                 >
-                  <Trash2 size={16} />
-                </button>
-              </li>
-            ))}
+                  <div className="quadro-info">
+                    <span className="quadro-desc">
+                      {formatarDescricaoQuadro(quadro)}
+                    </span>
+                    <span className="quadro-valor" style={{ marginTop: "8px" }}>
+                      Total: R$ {quadro.valorCalculado.toFixed(2)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-icon-danger"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      // ✅ CRÍTICO: Verificar ID ANTES de usar
+                      const idParaDelete = quadro?.id;
+                      console.log(`🖱️ Clique na lixeira - ID detectado:`, idParaDelete, `Tipo:`, typeof idParaDelete);
+                      
+                      if (!idParaDelete || idParaDelete === 0 || idParaDelete === null || isNaN(Number(idParaDelete))) {
+                        console.error("❌ ID INVÁLIDO DETECTADO:", idParaDelete);
+                        alert("Erro: ID inválido no quadro");
+                        return;
+                      }
+                      
+                      onDeleteQuadro(Number(idParaDelete));
+                    }}
+                    aria-label="Excluir quadro"
+                    style={{ marginTop: "4px" }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -173,10 +202,15 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
       )}
 
       <div className="form-actions">
-        <button className="btn btn-danger" onClick={onLimparPedido}>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={onLimparPedido}
+        >
           {isEditing ? "Cancelar Edição" : "Limpar Pedido"}
         </button>
         <button
+          type="submit"
           className="btn btn-success"
           onClick={onSalvarPedido}
           disabled={isSalvando}

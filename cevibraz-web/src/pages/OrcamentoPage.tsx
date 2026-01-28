@@ -330,12 +330,15 @@ export function OrcamentoPage() {
       setIsLoading(true);
       const resultado = await calcularPrecoQuadro(dto);
 
-      // --- multiplicar pela quantidade ---
       const qtd = Math.max(1, parseInt(quantidade) || 1);
       const valorTotalItem = resultado.total * qtd;
 
+      // ✅ CORREÇÃO CRÍTICA: ID único garantido
+      // Date.now() pode duplicar em cliques rápidos, então adicionamos Math.random()
+      const novoId = Date.now() + Math.floor(Math.random() * 100000);
+
       const novoQuadro: QuadroNoEstado = {
-        id: Date.now(), // ID temporário p front
+        id: novoId,
         altura: parseFloat(altura),
         largura: parseFloat(largura),
         moldurasSelecionadas: moldurasDoQuadro,
@@ -345,15 +348,22 @@ export function OrcamentoPage() {
           : 0,
         medidaFornecidaCliente: medidaCliente,
         limpezaSelecionada: false,
-
-        // salva o valor TOTAL (unitario * qtd)
         valorCalculado: valorTotalItem,
         quantidade: qtd,
         detalhesCalculo: resultado.detalhes,
         acrescimo_cm: parseFloat(acrescimo) || 0,
       };
 
-      setQuadrosDoPedido((prev) => [...prev, novoQuadro]);
+      console.log("✅ Adicionando quadro com ID único:", novoId);
+      console.log("📊 Quadro criado:", novoQuadro);
+      
+      setQuadrosDoPedido((prev) => {
+        const novaLista = [...prev, novoQuadro];
+        console.log("📈 Nova quantidade de quadros:", novaLista.length);
+        console.log("📋 IDs agora:", novaLista.map(q => q.id));
+        return novaLista;
+      });
+      
       handleLimparCampos();
     } catch (err) {
       console.error(err);
@@ -366,8 +376,35 @@ export function OrcamentoPage() {
   // --- ACOES DO PEDIDO ---
 
   const handleDeleteQuadro = (id: number) => {
+    console.log(`🗑️ DELETANDO: Tentando remover quadro ID: ${id}`);
+    console.log(`📊 Estado ANTES: ${quadrosDoPedido.length} quadros`);
+    console.log(`📋 IDs ANTES:`, quadrosDoPedido.map(q => q.id));
+
+    if (!id || id === 0 || id === null) {
+      console.error("❌ ID INVÁLIDO DETECTADO:", id);
+      alert("Erro: ID inválido");
+      return;
+    }
+
     if (confirm("Remover este quadro do pedido?")) {
-      setQuadrosDoPedido((prev) => prev.filter((q) => q.id !== id));
+      setQuadrosDoPedido((prev) => {
+        console.log(`🔍 Filtrando lista com ${prev.length} itens...`);
+        const novaLista = prev.filter((q) => {
+          const deve_manter = q.id !== id;
+          console.log(`  - ID ${q.id}: ${deve_manter ? "MANTÉM ✓" : "REMOVE ✗"}`);
+          return deve_manter;
+        });
+
+        console.log(`📊 Estado DEPOIS: ${novaLista.length} quadros`);
+        console.log(`📋 IDs DEPOIS:`, novaLista.map(q => q.id));
+
+        // Alerta se tudo foi deletado acidentalmente
+        if (novaLista.length === 0 && prev.length > 1) {
+          console.error("🚨 CRÍTICO: Todos os quadros foram deletados! Verificar IDs duplicados.");
+        }
+
+        return novaLista;
+      });
     }
   };
 
@@ -395,22 +432,62 @@ export function OrcamentoPage() {
 
     setIsSalvando(true);
     try {
-      if (isEditing && pedidoId) {
-        // inclui 'id' no mapeamento
-        const quadrosParaEnvio = quadrosDoPedido.map(q => ({
-          id: q.id,
-          altura: Number(q.altura),
-          largura: Number(q.largura),
-          moldurasSelecionadas: q.moldurasSelecionadas,
-          materiaisSelecionados: q.materiaisSelecionados,
-          espessuraPaspatur: Number(q.espessuraPaspatur) || 0,
-          medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
-          limpezaSelecionada: Boolean(q.limpezaSelecionada),
-          valorCalculado: Number(q.valorCalculado),
-          acrescimo_cm: q.acrescimo_cm ? Number(q.acrescimo_cm) : undefined,
-          quantidade: q.quantidade ? Number(q.quantidade) : 1,
-        }));
+      // --- DEBUG CRÍTICO ---
+      console.log("🔍 Estado atual dos quadros:", JSON.stringify(quadrosDoPedido, null, 2));
+      
+      // ✅ Mapeamento BLINDADO contra undefined/null
+      const prepararQuadros = (lista: QuadroNoEstado[]) => {
+        return lista.map((q, idx) => {
+          // Validação de segurança
+          if (!q) {
+            console.warn(`⚠️ Quadro ${idx} está null/undefined!`);
+            throw new Error(`Quadro inválido na posição ${idx}`);
+          }
 
+          const quadroPronto = {
+            id: q.id,
+            altura: Number(q.altura),
+            largura: Number(q.largura),
+            // ✅ GARANTIA ABSOLUTA DE ARRAYS
+            moldurasSelecionadas: Array.isArray(q.moldurasSelecionadas) 
+              ? q.moldurasSelecionadas 
+              : [],
+            materiaisSelecionados: Array.isArray(q.materiaisSelecionados)
+              ? q.materiaisSelecionados
+              : [],
+            espessuraPaspatur: Number(q.espessuraPaspatur) || 0,
+            medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
+            limpezaSelecionada: Boolean(q.limpezaSelecionada),
+            valorCalculado: Number(q.valorCalculado),
+            acrescimo_cm: q.acrescimo_cm ? Number(q.acrescimo_cm) : 0,
+            quantidade: q.quantidade ? Number(q.quantidade) : 1,
+          };
+
+          // Log detalhado para DEBUG
+          console.log(`✓ Quadro ${idx} preparado:`, quadroPronto);
+          return quadroPronto;
+        });
+      };
+
+      const quadrosParaEnvio = prepararQuadros(quadrosDoPedido);
+      
+      // ✅ Verificação de segurança ANTES de enviar
+      if (quadrosParaEnvio.length === 0) {
+        throw new Error("Nenhum quadro válido para enviar!");
+      }
+
+      const todasMoldurasSao = quadrosParaEnvio.every(
+        (q) => Array.isArray(q.moldurasSelecionadas) && q.moldurasSelecionadas.length >= 0
+      );
+
+      if (!todasMoldurasSao) {
+        console.error("❌ Erro: Alguns quadros têm molduras inválidas!");
+        throw new Error("Erro interno: Tentativa de salvar quadro com molduras inválidas.");
+      }
+
+      console.log("📤 Enviando para API:", JSON.stringify(quadrosParaEnvio, null, 2));
+
+      if (isEditing && pedidoId) {
         const updateDto: PedidoUpdateDto = {
           observacoes,
           condicao_pagamento: condicaoPagamento,
@@ -419,25 +496,12 @@ export function OrcamentoPage() {
           valor_final_manual: valorFinalManual ?? undefined,
           ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
+        
+        console.log("🔄 Atualizando pedido:", updateDto);
         await updatePedido(Number(pedidoId), updateDto);
         alert(`Pedido #${numeroPedidoDisplay} atualizado com sucesso!`);
         navigate("/backlog");
       } else {
-        // bota 'id' no mapeamento
-        const quadrosParaEnvio = quadrosDoPedido.map(q => ({
-          id: q.id,
-          altura: Number(q.altura),
-          largura: Number(q.largura),
-          moldurasSelecionadas: q.moldurasSelecionadas,
-          materiaisSelecionados: q.materiaisSelecionados,
-          espessuraPaspatur: Number(q.espessuraPaspatur) || 0,
-          medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
-          limpezaSelecionada: Boolean(q.limpezaSelecionada),
-          valorCalculado: Number(q.valorCalculado),
-          acrescimo_cm: q.acrescimo_cm ? Number(q.acrescimo_cm) : undefined,
-          quantidade: q.quantidade ? Number(q.quantidade) : 1,
-        }));
-
         const dtoApi: PedidoApiDto = {
           nomeAtendente: atendente,
           nomeCliente: cliente,
@@ -450,14 +514,14 @@ export function OrcamentoPage() {
           ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
 
+        console.log("📝 Criando novo pedido:", dtoApi);
         const response = await salvarPedido(dtoApi);
+        
         if (response.pdf_pedido_url) {
           let urlAbsoluta = response.pdf_pedido_url;
-
           if (!urlAbsoluta.startsWith("http")) {
             urlAbsoluta = `${API_URL}${urlAbsoluta}`;
           }
-
           window.open(urlAbsoluta, "_blank");
         } else if (response.pedidoId) {
           try {
@@ -471,16 +535,20 @@ export function OrcamentoPage() {
         }
 
         alert(`Pedido #${response.numeroPedido} salvo com sucesso!`);
-        handleLimparPedido();
+        
+        // ✅ NÃO chama handleLimparPedido aqui - deixa o usuário decidir
+        // handleLimparPedido();
       }
     } catch (err) {
-      console.error("Erro completo:", err);
+      console.error("❌ Erro completo:", err);
       
       if (axios.isAxiosError(err) && err.response?.data) {
         const errorData = err.response.data as Record<string, unknown>;
         const errorMsg = (errorData.message as string) || 
                         JSON.stringify(err.response.data);
         alert(`Erro ao salvar pedido:\n${errorMsg}`);
+      } else if (err instanceof Error) {
+        alert(`Erro ao salvar pedido: ${err.message}`);
       } else {
         alert("Erro ao salvar pedido. Verifique o console.");
       }
