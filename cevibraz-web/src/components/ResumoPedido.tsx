@@ -122,7 +122,18 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
                 <button
                   type="button"
                   className="btn-icon-danger"
-                  onClick={() => onDeleteQuadro(quadro.id)}
+                  onClick={(e) => {
+                    // ✅ CORREÇÃO: Parar propagação de cliques
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log(`🖱️ Clique na lixeira para ID: ${quadro.id}`);
+                    if (quadro.id) {
+                      onDeleteQuadro(quadro.id);
+                    } else {
+                      console.error("❌ ID inválido no botão de deletar:", quadro.id);
+                    }
+                  }}
                   aria-label="Excluir quadro"
                   style={{ marginTop: "4px" }}
                 >

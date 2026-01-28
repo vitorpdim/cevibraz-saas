@@ -330,12 +330,15 @@ export function OrcamentoPage() {
       setIsLoading(true);
       const resultado = await calcularPrecoQuadro(dto);
 
-      // --- multiplicar pela quantidade ---
       const qtd = Math.max(1, parseInt(quantidade) || 1);
       const valorTotalItem = resultado.total * qtd;
 
+      // ✅ CORREÇÃO CRÍTICA: ID único garantido
+      // Date.now() pode duplicar em cliques rápidos, então adicionamos Math.random()
+      const novoId = Date.now() + Math.floor(Math.random() * 100000);
+
       const novoQuadro: QuadroNoEstado = {
-        id: Date.now(), // ID temporário p front
+        id: novoId,
         altura: parseFloat(altura),
         largura: parseFloat(largura),
         moldurasSelecionadas: moldurasDoQuadro,
@@ -345,15 +348,22 @@ export function OrcamentoPage() {
           : 0,
         medidaFornecidaCliente: medidaCliente,
         limpezaSelecionada: false,
-
-        // salva o valor TOTAL (unitario * qtd)
         valorCalculado: valorTotalItem,
         quantidade: qtd,
         detalhesCalculo: resultado.detalhes,
         acrescimo_cm: parseFloat(acrescimo) || 0,
       };
 
-      setQuadrosDoPedido((prev) => [...prev, novoQuadro]);
+      console.log("✅ Adicionando quadro com ID único:", novoId);
+      console.log("📊 Quadro criado:", novoQuadro);
+      
+      setQuadrosDoPedido((prev) => {
+        const novaLista = [...prev, novoQuadro];
+        console.log("📈 Nova quantidade de quadros:", novaLista.length);
+        console.log("📋 IDs agora:", novaLista.map(q => q.id));
+        return novaLista;
+      });
+      
       handleLimparCampos();
     } catch (err) {
       console.error(err);
@@ -366,8 +376,35 @@ export function OrcamentoPage() {
   // --- ACOES DO PEDIDO ---
 
   const handleDeleteQuadro = (id: number) => {
+    console.log(`🗑️ DELETANDO: Tentando remover quadro ID: ${id}`);
+    console.log(`📊 Estado ANTES: ${quadrosDoPedido.length} quadros`);
+    console.log(`📋 IDs ANTES:`, quadrosDoPedido.map(q => q.id));
+
+    if (!id || id === 0 || id === null) {
+      console.error("❌ ID INVÁLIDO DETECTADO:", id);
+      alert("Erro: ID inválido");
+      return;
+    }
+
     if (confirm("Remover este quadro do pedido?")) {
-      setQuadrosDoPedido((prev) => prev.filter((q) => q.id !== id));
+      setQuadrosDoPedido((prev) => {
+        console.log(`🔍 Filtrando lista com ${prev.length} itens...`);
+        const novaLista = prev.filter((q) => {
+          const deve_manter = q.id !== id;
+          console.log(`  - ID ${q.id}: ${deve_manter ? "MANTÉM ✓" : "REMOVE ✗"}`);
+          return deve_manter;
+        });
+
+        console.log(`📊 Estado DEPOIS: ${novaLista.length} quadros`);
+        console.log(`📋 IDs DEPOIS:`, novaLista.map(q => q.id));
+
+        // Alerta se tudo foi deletado acidentalmente
+        if (novaLista.length === 0 && prev.length > 1) {
+          console.error("🚨 CRÍTICO: Todos os quadros foram deletados! Verificar IDs duplicados.");
+        }
+
+        return novaLista;
+      });
     }
   };
 
