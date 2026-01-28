@@ -113,6 +113,7 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
                   </span>
                 </div>
                 <button
+                  type="button"
                   className="btn-icon-danger"
                   onClick={() => onDeleteQuadro(quadro.id)}
                   aria-label="Excluir quadro"
@@ -173,10 +174,15 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
       )}
 
       <div className="form-actions">
-        <button className="btn btn-danger" onClick={onLimparPedido}>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={onLimparPedido}
+        >
           {isEditing ? "Cancelar Edição" : "Limpar Pedido"}
         </button>
         <button
+          type="submit"
           className="btn btn-success"
           onClick={onSalvarPedido}
           disabled={isSalvando}

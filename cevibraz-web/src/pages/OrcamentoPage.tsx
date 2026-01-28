@@ -395,22 +395,62 @@ export function OrcamentoPage() {
 
     setIsSalvando(true);
     try {
-      if (isEditing && pedidoId) {
-        // inclui 'id' no mapeamento
-        const quadrosParaEnvio = quadrosDoPedido.map(q => ({
-          id: q.id,
-          altura: Number(q.altura),
-          largura: Number(q.largura),
-          moldurasSelecionadas: q.moldurasSelecionadas,
-          materiaisSelecionados: q.materiaisSelecionados,
-          espessuraPaspatur: Number(q.espessuraPaspatur) || 0,
-          medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
-          limpezaSelecionada: Boolean(q.limpezaSelecionada),
-          valorCalculado: Number(q.valorCalculado),
-          acrescimo_cm: q.acrescimo_cm ? Number(q.acrescimo_cm) : undefined,
-          quantidade: q.quantidade ? Number(q.quantidade) : 1,
-        }));
+      // --- DEBUG CRÍTICO ---
+      console.log("🔍 Estado atual dos quadros:", JSON.stringify(quadrosDoPedido, null, 2));
+      
+      // ✅ Mapeamento BLINDADO contra undefined/null
+      const prepararQuadros = (lista: QuadroNoEstado[]) => {
+        return lista.map((q, idx) => {
+          // Validação de segurança
+          if (!q) {
+            console.warn(`⚠️ Quadro ${idx} está null/undefined!`);
+            throw new Error(`Quadro inválido na posição ${idx}`);
+          }
 
+          const quadroPronto = {
+            id: q.id,
+            altura: Number(q.altura),
+            largura: Number(q.largura),
+            // ✅ GARANTIA ABSOLUTA DE ARRAYS
+            moldurasSelecionadas: Array.isArray(q.moldurasSelecionadas) 
+              ? q.moldurasSelecionadas 
+              : [],
+            materiaisSelecionados: Array.isArray(q.materiaisSelecionados)
+              ? q.materiaisSelecionados
+              : [],
+            espessuraPaspatur: Number(q.espessuraPaspatur) || 0,
+            medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
+            limpezaSelecionada: Boolean(q.limpezaSelecionada),
+            valorCalculado: Number(q.valorCalculado),
+            acrescimo_cm: q.acrescimo_cm ? Number(q.acrescimo_cm) : 0,
+            quantidade: q.quantidade ? Number(q.quantidade) : 1,
+          };
+
+          // Log detalhado para DEBUG
+          console.log(`✓ Quadro ${idx} preparado:`, quadroPronto);
+          return quadroPronto;
+        });
+      };
+
+      const quadrosParaEnvio = prepararQuadros(quadrosDoPedido);
+      
+      // ✅ Verificação de segurança ANTES de enviar
+      if (quadrosParaEnvio.length === 0) {
+        throw new Error("Nenhum quadro válido para enviar!");
+      }
+
+      const todasMoldurasSao = quadrosParaEnvio.every(
+        (q) => Array.isArray(q.moldurasSelecionadas) && q.moldurasSelecionadas.length >= 0
+      );
+
+      if (!todasMoldurasSao) {
+        console.error("❌ Erro: Alguns quadros têm molduras inválidas!");
+        throw new Error("Erro interno: Tentativa de salvar quadro com molduras inválidas.");
+      }
+
+      console.log("📤 Enviando para API:", JSON.stringify(quadrosParaEnvio, null, 2));
+
+      if (isEditing && pedidoId) {
         const updateDto: PedidoUpdateDto = {
           observacoes,
           condicao_pagamento: condicaoPagamento,
@@ -419,25 +459,12 @@ export function OrcamentoPage() {
           valor_final_manual: valorFinalManual ?? undefined,
           ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
+        
+        console.log("🔄 Atualizando pedido:", updateDto);
         await updatePedido(Number(pedidoId), updateDto);
         alert(`Pedido #${numeroPedidoDisplay} atualizado com sucesso!`);
         navigate("/backlog");
       } else {
-        // bota 'id' no mapeamento
-        const quadrosParaEnvio = quadrosDoPedido.map(q => ({
-          id: q.id,
-          altura: Number(q.altura),
-          largura: Number(q.largura),
-          moldurasSelecionadas: q.moldurasSelecionadas,
-          materiaisSelecionados: q.materiaisSelecionados,
-          espessuraPaspatur: Number(q.espessuraPaspatur) || 0,
-          medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
-          limpezaSelecionada: Boolean(q.limpezaSelecionada),
-          valorCalculado: Number(q.valorCalculado),
-          acrescimo_cm: q.acrescimo_cm ? Number(q.acrescimo_cm) : undefined,
-          quantidade: q.quantidade ? Number(q.quantidade) : 1,
-        }));
-
         const dtoApi: PedidoApiDto = {
           nomeAtendente: atendente,
           nomeCliente: cliente,
@@ -450,14 +477,14 @@ export function OrcamentoPage() {
           ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
 
+        console.log("📝 Criando novo pedido:", dtoApi);
         const response = await salvarPedido(dtoApi);
+        
         if (response.pdf_pedido_url) {
           let urlAbsoluta = response.pdf_pedido_url;
-
           if (!urlAbsoluta.startsWith("http")) {
             urlAbsoluta = `${API_URL}${urlAbsoluta}`;
           }
-
           window.open(urlAbsoluta, "_blank");
         } else if (response.pedidoId) {
           try {
@@ -474,13 +501,15 @@ export function OrcamentoPage() {
         handleLimparPedido();
       }
     } catch (err) {
-      console.error("Erro completo:", err);
+      console.error("❌ Erro completo:", err);
       
       if (axios.isAxiosError(err) && err.response?.data) {
         const errorData = err.response.data as Record<string, unknown>;
         const errorMsg = (errorData.message as string) || 
                         JSON.stringify(err.response.data);
         alert(`Erro ao salvar pedido:\n${errorMsg}`);
+      } else if (err instanceof Error) {
+        alert(`Erro ao salvar pedido: ${err.message}`);
       } else {
         alert("Erro ao salvar pedido. Verifique o console.");
       }
