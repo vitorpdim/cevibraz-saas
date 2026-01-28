@@ -50,12 +50,15 @@ export function OrcamentoPage() {
   const [observacoes, setObservacoes] = useState("");
   const [condicaoPagamento, setCondicaoPagamento] = useState("");
   const [ocultarValoresUnitarios, setOcultarValoresUnitarios] = useState(false);
+  
+  // NOVO: Armazenar o número do pedido para exibição (#0038)
+  const [numeroPedidoDisplay, setNumeroPedidoDisplay] = useState("");
+
   const [formQuadro, setFormQuadro] = useState(estadoInicialFormQuadro);
   const [quadrosDoPedido, setQuadrosDoPedido] = useState<QuadroNoEstado[]>([]);
   const [valorFinalManual, setValorFinalManual] = useState<number | null>(null);
   const [isSalvando, setIsSalvando] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [numeroPedidoEditando, setNumeroPedidoEditando] = useState("");
   const { pedidoId } = useParams();
   const navigate = useNavigate();
 
@@ -73,18 +76,36 @@ export function OrcamentoPage() {
         if (pedidoId) {
           setIsEditing(true);
           const pedido = await fetchPedidoById(Number(pedidoId));
+          
+          // CORREÇÃO: Tenta pegar numero_pedido (snake_case do backend)
+          setNumeroPedidoDisplay(pedido.numero_pedido || pedido.numeroPedido || "");
+          
           setAtendente(pedido.atendente);
           setCliente(pedido.clienteNome);
           setTelefone(pedido.clienteTelefone);
           setObservacoes(pedido.observacoes);
           setCondicaoPagamento(pedido.condicao_pagamento || "");
-          setQuadrosDoPedido(pedido.quadros);
-          setNumeroPedidoEditando(pedido.id?.toString() || ""); // ADICIONAR AQUI
+          
+          // Formata os quadros para garantir tipos corretos
+          const quadrosFormatados = pedido.quadros.map((q: any) => ({
+            ...q,
+            quantidade: Number(q.quantidade || 1),
+            valorCalculado: Number(q.valorCalculado || 0),
+            altura: Number(q.altura || 0),
+            largura: Number(q.largura || 0),
+            acrescimo_cm: Number(q.acrescimo_cm || 0),
+          }));
+
+          setQuadrosDoPedido(quadrosFormatados);
+          
+          const totalCalculado = quadrosFormatados.reduce(
+            (acc: number, q: any) => acc + q.valorCalculado,
+            0,
+          );
+          const totalSalvo = Number(pedido.valor_final_salvo || 0);
+          
           setValorFinalManual(
-            pedido.valor_final_salvo !==
-              pedido.quadros.reduce((acc, q) => acc + q.valorCalculado, 0)
-              ? pedido.valor_final_salvo
-              : null,
+            Math.abs(totalSalvo - totalCalculado) > 0.05 ? totalSalvo : null,
           );
           setOcultarValoresUnitarios(pedido.ocultar_valores_unitarios || false);
         }
@@ -332,9 +353,8 @@ export function OrcamentoPage() {
     setIsSalvando(true);
     try {
       if (isEditing && pedidoId) {
-        // Keep 'id' field - it's required by QuadroNoEstado type
+        // CORRIGIDO: Remove 'id' e garante tipos corretos
         const quadrosParaEnvio = quadrosDoPedido.map(q => ({
-          id: q.id,
           altura: Number(q.altura),
           largura: Number(q.largura),
           moldurasSelecionadas: q.moldurasSelecionadas,
@@ -356,12 +376,12 @@ export function OrcamentoPage() {
           ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
         await updatePedido(Number(pedidoId), updateDto);
-        alert("Pedido atualizado com sucesso!");
+        // CORRIGIDO: Usa numeroPedidoDisplay que vem do backend
+        alert(`Pedido #${numeroPedidoDisplay} atualizado com sucesso!`);
         navigate("/backlog");
       } else {
-        // Keep 'id' field for consistency
+        // CORRIGIDO: Remove 'id' dos quadros para novo pedido
         const quadrosParaEnvio = quadrosDoPedido.map(q => ({
-          id: q.id,
           altura: Number(q.altura),
           largura: Number(q.largura),
           moldurasSelecionadas: q.moldurasSelecionadas,
@@ -412,7 +432,6 @@ export function OrcamentoPage() {
     } catch (err) {
       console.error("Erro completo:", err);
       
-      // Se for erro HTTP, mostra mensagem específica
       if (axios.isAxiosError(err) && err.response?.data) {
         const errorData = err.response.data as Record<string, unknown>;
         const errorMsg = (errorData.message as string) || 
@@ -459,8 +478,9 @@ export function OrcamentoPage() {
     <div className="page-content">
       <div className="container">
         <h1 className="page-title">
-          {isEditing ? `Editando Pedido #${numeroPedidoEditando}` : "Novo Orçamento"}
+          {isEditing ? `Editando Pedido #${numeroPedidoDisplay}` : "Novo Orçamento"}
         </h1>
+
         <OrcamentoForm
           moldurasList={moldurasList}
           materiaisList={materiaisList}
