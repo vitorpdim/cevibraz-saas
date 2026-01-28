@@ -20,6 +20,7 @@ import type {
 import { OrcamentoForm } from "../components/OrcamentoForm";
 import { ResumoPedido } from "../components/ResumoPedido";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://cevibraz-api.onrender.com";
@@ -54,6 +55,7 @@ export function OrcamentoPage() {
   const [valorFinalManual, setValorFinalManual] = useState<number | null>(null);
   const [isSalvando, setIsSalvando] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [numeroPedidoEditando, setNumeroPedidoEditando] = useState("");
   const { pedidoId } = useParams();
   const navigate = useNavigate();
 
@@ -68,7 +70,6 @@ export function OrcamentoPage() {
         setMoldurasList(molduras);
         setMateriaisList(materiais);
 
-        // se tiver ID na url, carrega o pedido p ediçao
         if (pedidoId) {
           setIsEditing(true);
           const pedido = await fetchPedidoById(Number(pedidoId));
@@ -78,6 +79,7 @@ export function OrcamentoPage() {
           setObservacoes(pedido.observacoes);
           setCondicaoPagamento(pedido.condicao_pagamento || "");
           setQuadrosDoPedido(pedido.quadros);
+          setNumeroPedidoEditando(pedido.id?.toString() || ""); // ADICIONAR AQUI
           setValorFinalManual(
             pedido.valor_final_salvo !==
               pedido.quadros.reduce((acc, q) => acc + q.valorCalculado, 0)
@@ -330,10 +332,25 @@ export function OrcamentoPage() {
     setIsSalvando(true);
     try {
       if (isEditing && pedidoId) {
+        // Keep 'id' field - it's required by QuadroNoEstado type
+        const quadrosParaEnvio = quadrosDoPedido.map(q => ({
+          id: q.id,
+          altura: Number(q.altura),
+          largura: Number(q.largura),
+          moldurasSelecionadas: q.moldurasSelecionadas,
+          materiaisSelecionados: q.materiaisSelecionados,
+          espessuraPaspatur: Number(q.espessuraPaspatur) || 0,
+          medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
+          limpezaSelecionada: Boolean(q.limpezaSelecionada),
+          valorCalculado: Number(q.valorCalculado),
+          acrescimo_cm: q.acrescimo_cm ? Number(q.acrescimo_cm) : undefined,
+          quantidade: q.quantidade ? Number(q.quantidade) : 1,
+        }));
+
         const updateDto: PedidoUpdateDto = {
           observacoes,
           condicao_pagamento: condicaoPagamento,
-          quadros: quadrosDoPedido,
+          quadros: quadrosParaEnvio,
           valor_final_calculado: valorTotalPedido,
           valor_final_manual: valorFinalManual ?? undefined,
           ocultar_valores_unitarios: ocultarValoresUnitarios,
@@ -342,23 +359,37 @@ export function OrcamentoPage() {
         alert("Pedido atualizado com sucesso!");
         navigate("/backlog");
       } else {
-        const dto: PedidoApiDto = {
+        // Keep 'id' field for consistency
+        const quadrosParaEnvio = quadrosDoPedido.map(q => ({
+          id: q.id,
+          altura: Number(q.altura),
+          largura: Number(q.largura),
+          moldurasSelecionadas: q.moldurasSelecionadas,
+          materiaisSelecionados: q.materiaisSelecionados,
+          espessuraPaspatur: Number(q.espessuraPaspatur) || 0,
+          medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
+          limpezaSelecionada: Boolean(q.limpezaSelecionada),
+          valorCalculado: Number(q.valorCalculado),
+          acrescimo_cm: q.acrescimo_cm ? Number(q.acrescimo_cm) : undefined,
+          quantidade: q.quantidade ? Number(q.quantidade) : 1,
+        }));
+
+        const dtoApi: PedidoApiDto = {
           nomeAtendente: atendente,
           nomeCliente: cliente,
           telefoneCliente: telefone,
           observacoes,
           condicao_pagamento: condicaoPagamento,
-          quadros: quadrosDoPedido,
+          quadros: quadrosParaEnvio,
           valor_final_calculado: valorTotalPedido,
           valor_final_manual: valorFinalManual ?? undefined,
           ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
 
-        const response = await salvarPedido(dto);
+        const response = await salvarPedido(dtoApi);
         if (response.pdf_pedido_url) {
           let urlAbsoluta = response.pdf_pedido_url;
 
-          // se for caminho relativo add url base do render
           if (!urlAbsoluta.startsWith("http")) {
             urlAbsoluta = `${API_URL}${urlAbsoluta}`;
           }
@@ -379,8 +410,17 @@ export function OrcamentoPage() {
         handleLimparPedido();
       }
     } catch (err) {
-      console.error(err);
-      alert("Erro ao salvar pedido.");
+      console.error("Erro completo:", err);
+      
+      // Se for erro HTTP, mostra mensagem específica
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const errorData = err.response.data as Record<string, unknown>;
+        const errorMsg = (errorData.message as string) || 
+                        JSON.stringify(err.response.data);
+        alert(`Erro ao salvar pedido:\n${errorMsg}`);
+      } else {
+        alert("Erro ao salvar pedido. Verifique o console.");
+      }
     } finally {
       setIsSalvando(false);
     }
@@ -415,14 +455,12 @@ export function OrcamentoPage() {
       </div>
     );
   }
-
   return (
     <div className="page-content">
       <div className="container">
         <h1 className="page-title">
-          {isEditing ? `Editando Pedido #${pedidoId}` : "Novo Orçamento"}
+          {isEditing ? `Editando Pedido #${numeroPedidoEditando}` : "Novo Orçamento"}
         </h1>
-
         <OrcamentoForm
           moldurasList={moldurasList}
           materiaisList={materiaisList}
@@ -467,7 +505,6 @@ export function OrcamentoPage() {
             setFormQuadro((f) => ({ ...f, quantidade: v }))
           }
         />
-
         <ResumoPedido
           quadros={quadrosDoPedido}
           observacoes={observacoes}
