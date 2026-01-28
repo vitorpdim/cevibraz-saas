@@ -86,6 +86,7 @@ export interface PedidoBacklog {
 // p edição carregar na tela de orçamento
 export interface PedidoParaEdicao {
   id: number;
+  numero_pedido: string; // ADICIONAR AQUI
   atendente: string;
   clienteNome: string;
   clienteTelefone: string;
