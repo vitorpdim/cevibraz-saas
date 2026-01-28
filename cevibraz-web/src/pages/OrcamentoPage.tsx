@@ -78,10 +78,7 @@ export function OrcamentoPage() {
   const [observacoes, setObservacoes] = useState("");
   const [condicaoPagamento, setCondicaoPagamento] = useState("");
   const [ocultarValoresUnitarios, setOcultarValoresUnitarios] = useState(false);
-  
-  // NOVO: Armazenar o número do pedido para exibição (#0038)
   const [numeroPedidoDisplay, setNumeroPedidoDisplay] = useState("");
-
   const [formQuadro, setFormQuadro] = useState(estadoInicialFormQuadro);
   const [quadrosDoPedido, setQuadrosDoPedido] = useState<QuadroNoEstado[]>([]);
   const [valorFinalManual, setValorFinalManual] = useState<number | null>(null);
@@ -90,7 +87,7 @@ export function OrcamentoPage() {
   const { pedidoId } = useParams();
   const navigate = useNavigate();
 
-  // --- CARREGAMENTO DE DADOS (CORREÇÃO CRÍTICA COM TYPE-SAFETY) ---
+  // --- CARREGAMENTO DE DADOS ---
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -113,17 +110,13 @@ export function OrcamentoPage() {
           setObservacoes(pedido.observacoes);
           setCondicaoPagamento(pedido.condicao_pagamento || "");
           
-          // --- MAPEAMENTO CRÍTICO (Banco -> Frontend) ---
-          // GARANTE que moldurasSelecionadas e materiaisSelecionados sejam arrays de strings
           const quadrosFormatados = pedido.quadros.map((q: QuadroApiResponse) => {
-            // Se veio do banco com estrutura aninhada (quadroMolduras), converte para array de strings
             const moldurasSelecionadas: string[] = q.quadroMolduras
               ? q.quadroMolduras
                   .map((qm: QuadroMolduraAninhada) => qm.moldura?.nome || qm.moldura?.codigo)
                   .filter((nome): nome is string => Boolean(nome))
               : (q.moldurasSelecionadas || []);
 
-            // Se veio do banco com estrutura aninhada (quadroMateriais), converte para array de strings
             const materiaisSelecionados: string[] = q.quadroMateriais
               ? q.quadroMateriais
                   .map((qm: QuadroMaterialAninhada) => qm.material?.nome)
@@ -134,8 +127,8 @@ export function OrcamentoPage() {
               id: q.id,
               altura: Number(q.altura || q.altura_cm || 0),
               largura: Number(q.largura || q.largura_cm || 0),
-              moldurasSelecionadas, // ✅ AGORA É ARRAY DE STRINGS (não vazio!)
-              materiaisSelecionados, // ✅ AGORA É ARRAY DE STRINGS (não vazio!)
+              moldurasSelecionadas,
+              materiaisSelecionados,
               espessuraPaspatur: Number(q.espessuraPaspatur || q.espessura_paspatur_cm || 0),
               medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
               limpezaSelecionada: Boolean(q.limpezaSelecionada),
@@ -403,7 +396,7 @@ export function OrcamentoPage() {
     setIsSalvando(true);
     try {
       if (isEditing && pedidoId) {
-        // CORRIGIDO: Remove 'id' e garante tipos corretos
+        // inclui 'id' no mapeamento
         const quadrosParaEnvio = quadrosDoPedido.map(q => ({
           id: q.id,
           altura: Number(q.altura),
@@ -427,11 +420,10 @@ export function OrcamentoPage() {
           ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
         await updatePedido(Number(pedidoId), updateDto);
-        // CORRIGIDO: Usa numeroPedidoDisplay que vem do backend
         alert(`Pedido #${numeroPedidoDisplay} atualizado com sucesso!`);
         navigate("/backlog");
       } else {
-        // CORRIGIDO: Inclui 'id' dos quadros para novo pedido
+        // bota 'id' no mapeamento
         const quadrosParaEnvio = quadrosDoPedido.map(q => ({
           id: q.id,
           altura: Number(q.altura),

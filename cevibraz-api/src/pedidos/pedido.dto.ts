@@ -7,11 +7,20 @@ import {
   IsIn,
   IsBoolean,
   ValidateNested,
+  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 // --- DTO DO QUADRO ---
 export class QuadroDto {
+  // ✅ SOLUÇÃO DO CONFLITO FRONTEND/BACKEND
+  // Permitimos receber 'id' (para o Frontend não quebrar a tipagem),
+  // mas marcamos como @IsOptional. O Service ignora esse campo naturalmente
+  // ao mapear campo por campo durante a criação.
+  @IsOptional()
+  @IsNumber()
+  id?: number;
+
   @IsNumber()
   altura: number;
 
@@ -25,9 +34,9 @@ export class QuadroDto {
   @IsArray()
   @IsString({ each: true })
   materiaisSelecionados: string[];
-  // =================================================================
 
   @IsNumber()
+  @Min(0)
   espessuraPaspatur: number;
 
   @IsBoolean()
@@ -37,18 +46,21 @@ export class QuadroDto {
   limpezaSelecionada: boolean;
 
   @IsNumber()
+  @Min(0)
   valorCalculado: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   acrescimo_cm?: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(1)
   quantidade?: number;
 }
 
-// interface auxiliar (nao afeta validação, eh so pra ajuda na tipagem)
+// interface auxiliar (não afeta validação)
 export interface QuadroDtoWithExtras
   extends Omit<QuadroDto, 'espessuraPaspatur' | 'materiaisSelecionados'> {
   espessuraPaspatur?: number;
@@ -73,7 +85,7 @@ export class CreatePedidoDto {
 
   @IsOptional()
   @IsString()
-  condicao_pagamento: string;
+  condicao_pagamento?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -81,10 +93,12 @@ export class CreatePedidoDto {
   quadros: QuadroDto[];
 
   @IsNumber()
+  @Min(0)
   valor_final_calculado: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   valor_final_manual?: number;
 
   @IsOptional()
@@ -99,7 +113,7 @@ export class UpdatePedidoDto {
 
   @IsOptional()
   @IsString()
-  condicao_pagamento: string;
+  condicao_pagamento?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -107,10 +121,12 @@ export class UpdatePedidoDto {
   quadros: QuadroDto[];
 
   @IsNumber()
+  @Min(0)
   valor_final_calculado: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   valor_final_manual?: number;
 
   @IsOptional()
@@ -152,6 +168,7 @@ export interface GrupoQuadro {
 
 export interface PedidoParaEdicao {
   id: number;
+  numero_pedido: string;
   atendente: string;
   clienteNome: string;
   clienteTelefone: string;
