@@ -360,8 +360,21 @@ export class PdfService implements OnModuleInit {
         true,
         ocultarPrecosIndividuais,
       );
-      const valorUnit = parseFloat(String(grupo.detalhes.valorCalculado || 0));
-      const valorTotalGrupo = valorUnit * grupo.quantidade;
+
+      // --- evitar dupla multiplicação ---
+      // 1. pega o valor total salvo no banco para aquele item específico
+      const valorTotalItemBanco = parseFloat(
+        String(grupo.detalhes.valorCalculado || 0),
+      );
+      // 2. a quantidade salva naquele item (evita divisao por 0)
+      const qtdItemBanco = Math.max(1, Number(grupo.detalhes.quantidade || 1));
+
+      // 3. decscobre o preço unitário real
+      const valorUnitarioReal = valorTotalItemBanco / qtdItemBanco;
+
+      // 4. multiplica pelo total acumulado no grupo
+      const valorTotalGrupo = valorUnitarioReal * grupo.quantidade;
+      // ----------------------------------------
 
       const descHeight = doc.heightOfString(desc, { width: colWidths[2] - 10 });
       const currentLineHeight = Math.max(40, descHeight + 15);
