@@ -326,19 +326,26 @@ export class PedidosService {
     pedido: Pedido,
     quadrosDto: QuadroDto[],
   ): Promise<QuadroParaPdf[]> {
+    // ✅ PROTEÇÃO 1: Garantir que as listas nunca sejam undefined
     const todosNomesMolduras = quadrosDto.flatMap(
-      (q) => q.moldurasSelecionadas,
+      (q) => q.moldurasSelecionadas || [],
     );
     const todosNomesMateriais = quadrosDto.flatMap(
-      (q) => q.materiaisSelecionados,
+      (q) => q.materiaisSelecionados || [],
     );
 
     const [moldurasDB, materiaisDB] = await Promise.all([
-      this.moldurasRepository.findBy([
-        { nome: In(todosNomesMolduras) },
-        { codigo: In(todosNomesMolduras) },
-      ]),
-      this.materiaisRepository.findBy({ nome: In(todosNomesMateriais) }),
+      this.moldurasRepository.findBy(
+        [
+          { nome: todosNomesMolduras.length > 0 ? undefined : { nome: '' } },
+          {
+            codigo: todosNomesMolduras.length > 0 ? undefined : { codigo: '' },
+          },
+        ].filter(Boolean) as any,
+      ),
+      this.materiaisRepository.findBy(
+        todosNomesMateriais.length > 0 ? { nome: In(todosNomesMateriais) } : {},
+      ),
     ]);
 
     const moldurasMap = new Map<string, Moldura>();
@@ -376,7 +383,8 @@ export class PedidosService {
         espessura_paspatur_cm: number | undefined;
       }[] = [];
 
-      for (const nomeMoldura of quadroDto.moldurasSelecionadas) {
+      // ✅ PROTEÇÃO 2: Usar array vazio como fallback para molduras
+      for (const nomeMoldura of quadroDto.moldurasSelecionadas || []) {
         const moldura = moldurasMap.get(nomeMoldura.toLowerCase());
         if (moldura) {
           moldurasSalvas.push({ nome: moldura.nome, codigo: moldura.codigo });
@@ -388,7 +396,8 @@ export class PedidosService {
         }
       }
 
-      for (const nomeMaterial of quadroDto.materiaisSelecionados) {
+      // ✅ PROTEÇÃO 3: Usar array vazio como fallback para materiais
+      for (const nomeMaterial of quadroDto.materiaisSelecionados || []) {
         const material = materiaisMap.get(nomeMaterial.toLowerCase());
         if (material) {
           let esp: number | undefined = undefined;
@@ -427,8 +436,8 @@ export class PedidosService {
         largura: quadroDto.largura,
         medidaFornecidaCliente: quadroDto.medidaFornecidaCliente,
         limpezaSelecionada: quadroDto.limpezaSelecionada,
-        moldurasSelecionadas: quadroDto.moldurasSelecionadas,
-        materiaisSelecionados: quadroDto.materiaisSelecionados,
+        moldurasSelecionadas: quadroDto.moldurasSelecionadas || [],
+        materiaisSelecionados: quadroDto.materiaisSelecionados || [],
         espessuraPaspatur: quadroDto.espessuraPaspatur,
         acrescimo_cm: acrescimoValue,
       });
@@ -437,7 +446,6 @@ export class PedidosService {
       novoQuadro.detalhes_calculo = detalhesCalculo.detalhes;
       await manager.save(novoQuadro);
 
-      // quantidade vai para o PDF
       quadrosParaPdf.push({
         ...quadroDto,
         id: novoQuadro.id,
@@ -504,7 +512,7 @@ export class PedidosService {
                 (consumoMat * quantidadeQuadros).toFixed(2),
               ),
               pedido_id: pedido.id,
-              descricao: `Baixa Pedido ${pedido.numero_pedido}`,
+              descricao: `Baixa pedido ${pedido.numero_pedido}`,
             });
           } catch (e) {
             this.logger.error(`Erro baixa material: ${e}`);

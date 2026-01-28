@@ -90,7 +90,7 @@ export function OrcamentoPage() {
   const { pedidoId } = useParams();
   const navigate = useNavigate();
 
-  // --- CARREGAMENTO DE DADOS (CORREÇÃO DO MAPEAMENTO) ---
+  // --- CARREGAMENTO DE DADOS (CORREÇÃO CRÍTICA COM TYPE-SAFETY) ---
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -107,23 +107,23 @@ export function OrcamentoPage() {
           const pedido = await fetchPedidoById(Number(pedidoId));
           
           setNumeroPedidoDisplay(pedido.numero_pedido);
-          
           setAtendente(pedido.atendente);
           setCliente(pedido.clienteNome);
           setTelefone(pedido.clienteTelefone);
           setObservacoes(pedido.observacoes);
           setCondicaoPagamento(pedido.condicao_pagamento || "");
           
-          // --- CORREÇÃO CRÍTICA: MAPEAR CORRETAMENTE ---
+          // --- MAPEAMENTO CRÍTICO (Banco -> Frontend) ---
+          // GARANTE que moldurasSelecionadas e materiaisSelecionados sejam arrays de strings
           const quadrosFormatados = pedido.quadros.map((q: QuadroApiResponse) => {
-            // Extrai nomes das molduras (se veio do banco em formato aninhado)
+            // Se veio do banco com estrutura aninhada (quadroMolduras), converte para array de strings
             const moldurasSelecionadas: string[] = q.quadroMolduras
               ? q.quadroMolduras
                   .map((qm: QuadroMolduraAninhada) => qm.moldura?.nome || qm.moldura?.codigo)
                   .filter((nome): nome is string => Boolean(nome))
               : (q.moldurasSelecionadas || []);
 
-            // Extrai nomes dos materiais (se veio do banco em formato aninhado)
+            // Se veio do banco com estrutura aninhada (quadroMateriais), converte para array de strings
             const materiaisSelecionados: string[] = q.quadroMateriais
               ? q.quadroMateriais
                   .map((qm: QuadroMaterialAninhada) => qm.material?.nome)
@@ -134,8 +134,8 @@ export function OrcamentoPage() {
               id: q.id,
               altura: Number(q.altura || q.altura_cm || 0),
               largura: Number(q.largura || q.largura_cm || 0),
-              moldurasSelecionadas,
-              materiaisSelecionados,
+              moldurasSelecionadas, // ✅ AGORA É ARRAY DE STRINGS (não vazio!)
+              materiaisSelecionados, // ✅ AGORA É ARRAY DE STRINGS (não vazio!)
               espessuraPaspatur: Number(q.espessuraPaspatur || q.espessura_paspatur_cm || 0),
               medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
               limpezaSelecionada: Boolean(q.limpezaSelecionada),
@@ -143,7 +143,7 @@ export function OrcamentoPage() {
               detalhesCalculo: q.detalhesCalculo || [],
               acrescimo_cm: Number(q.acrescimo_cm || 0),
               quantidade: Number(q.quantidade || 1),
-            };
+            } as QuadroNoEstado;
           });
 
           setQuadrosDoPedido(quadrosFormatados);
