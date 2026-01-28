@@ -535,7 +535,9 @@ export function OrcamentoPage() {
         }
 
         alert(`Pedido #${response.numeroPedido} salvo com sucesso!`);
-        handleLimparPedido();
+        
+        // ✅ NÃO chama handleLimparPedido aqui - deixa o usuário decidir
+        // handleLimparPedido();
       }
     } catch (err) {
       console.error("❌ Erro completo:", err);

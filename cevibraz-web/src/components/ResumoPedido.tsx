@@ -105,42 +105,52 @@ export const ResumoPedido: React.FC<ResumoPedidoProps> = (props) => {
           <p className="empty-state">Nenhum quadro adicionado ainda.</p>
         ) : (
           <ul className="quadros-list">
-            {quadrosSeguro.map((quadro) => (
-              <li
-                key={quadro.id}
-                className="quadro-item"
-                style={{ alignItems: "flex-start" }}
-              >
-                <div className="quadro-info">
-                  <span className="quadro-desc">
-                    {formatarDescricaoQuadro(quadro)}
-                  </span>
-                  <span className="quadro-valor" style={{ marginTop: "8px" }}>
-                    Total: R$ {quadro.valorCalculado.toFixed(2)}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="btn-icon-danger"
-                  onClick={(e) => {
-                    // ✅ CORREÇÃO: Parar propagação de cliques
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    console.log(`🖱️ Clique na lixeira para ID: ${quadro.id}`);
-                    if (quadro.id) {
-                      onDeleteQuadro(quadro.id);
-                    } else {
-                      console.error("❌ ID inválido no botão de deletar:", quadro.id);
-                    }
-                  }}
-                  aria-label="Excluir quadro"
-                  style={{ marginTop: "4px" }}
+            {quadrosSeguro.map((quadro) => {
+              // ✅ DEBUG: Log do quadro COMPLETO
+              console.log(`📦 Mapeando quadro:`, quadro);
+              console.log(`  - ID do quadro:`, quadro.id, `Tipo:`, typeof quadro.id);
+
+              return (
+                <li
+                  key={`quadro-${quadro.id}`}
+                  className="quadro-item"
+                  style={{ alignItems: "flex-start" }}
                 >
-                  <Trash2 size={16} />
-                </button>
-              </li>
-            ))}
+                  <div className="quadro-info">
+                    <span className="quadro-desc">
+                      {formatarDescricaoQuadro(quadro)}
+                    </span>
+                    <span className="quadro-valor" style={{ marginTop: "8px" }}>
+                      Total: R$ {quadro.valorCalculado.toFixed(2)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-icon-danger"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      // ✅ CRÍTICO: Verificar ID ANTES de usar
+                      const idParaDelete = quadro?.id;
+                      console.log(`🖱️ Clique na lixeira - ID detectado:`, idParaDelete, `Tipo:`, typeof idParaDelete);
+                      
+                      if (!idParaDelete || idParaDelete === 0 || idParaDelete === null || isNaN(Number(idParaDelete))) {
+                        console.error("❌ ID INVÁLIDO DETECTADO:", idParaDelete);
+                        alert("Erro: ID inválido no quadro");
+                        return;
+                      }
+                      
+                      onDeleteQuadro(Number(idParaDelete));
+                    }}
+                    aria-label="Excluir quadro"
+                    style={{ marginTop: "4px" }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

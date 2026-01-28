@@ -256,6 +256,7 @@ export class PedidosService {
           await this.calculoService.calcularPrecoQuadro(dtoSimulado);
 
         return {
+          id: q.id, // ✅ ADICIONAR ID DO QUADRO
           ...dtoSimulado,
           espessuraPaspatur: dtoSimulado.espessuraPaspatur,
           valorCalculado: calculo.total,
@@ -267,8 +268,8 @@ export class PedidosService {
     );
 
     return {
-      id: pedido.id, // ADICIONAR AQUI
-      numero_pedido: pedido.numero_pedido, // ADICIONAR AQUI
+      id: pedido.id,
+      numero_pedido: pedido.numero_pedido,
       atendente: pedido.atendente,
       clienteNome: pedido.cliente?.nome || 'Cliente Removido',
       clienteTelefone: pedido.cliente?.telefone || '',
