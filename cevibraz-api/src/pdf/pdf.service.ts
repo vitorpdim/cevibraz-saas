@@ -772,10 +772,15 @@ export class PdfService implements OnModuleInit {
         valorChave,
       ].join('|');
 
+      // CORREÇÃO: Pega a quantidade REAL do item (não assume 1)
+      const qtdItem = Number(quadro.quantidade || 1);
+
       if (grupos[chave]) {
-        grupos[chave].quantidade++;
+        // SOMA A QUANTIDADE REAL do item agrupado
+        grupos[chave].quantidade += qtdItem;
       } else {
-        grupos[chave] = { quantidade: 1, detalhes: quadro };
+        // INICIA COM A QUANTIDADE REAL
+        grupos[chave] = { quantidade: qtdItem, detalhes: quadro };
       }
     });
     return Object.values(grupos);
