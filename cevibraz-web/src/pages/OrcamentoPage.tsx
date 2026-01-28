@@ -17,6 +17,34 @@ import type {
   PedidoUpdateDto,
 } from "../types";
 
+interface QuadroMolduraAninhada {
+  moldura?: { nome: string; codigo: string };
+}
+
+interface QuadroMaterialAninhada {
+  material?: { nome: string };
+}
+
+interface QuadroApiResponse {
+  id: number;
+  altura?: number;
+  largura?: number;
+  altura_cm?: number;
+  largura_cm?: number;
+  quadroMolduras?: QuadroMolduraAninhada[];
+  quadroMateriais?: QuadroMaterialAninhada[];
+  moldurasSelecionadas?: string[];
+  materiaisSelecionados?: string[];
+  espessuraPaspatur?: number;
+  espessura_paspatur_cm?: number;
+  medidaFornecidaCliente: boolean;
+  limpezaSelecionada: boolean;
+  valorCalculado?: number;
+  detalhesCalculo?: string[];
+  acrescimo_cm?: number;
+  quantidade?: number;
+}
+
 import { OrcamentoForm } from "../components/OrcamentoForm";
 import { ResumoPedido } from "../components/ResumoPedido";
 import { useParams, useNavigate } from "react-router-dom";
@@ -62,6 +90,7 @@ export function OrcamentoPage() {
   const { pedidoId } = useParams();
   const navigate = useNavigate();
 
+  // --- CARREGAMENTO DE DADOS (CORREÇÃO DO MAPEAMENTO) ---
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -77,7 +106,6 @@ export function OrcamentoPage() {
           setIsEditing(true);
           const pedido = await fetchPedidoById(Number(pedidoId));
           
-          // CORRIGIDO: Usa numero_pedido que agora existe no tipo
           setNumeroPedidoDisplay(pedido.numero_pedido);
           
           setAtendente(pedido.atendente);
@@ -86,15 +114,37 @@ export function OrcamentoPage() {
           setObservacoes(pedido.observacoes);
           setCondicaoPagamento(pedido.condicao_pagamento || "");
           
-          // Formata os quadros para garantir tipos corretos
-          const quadrosFormatados = pedido.quadros.map((q: QuadroNoEstado) => ({
-            ...q,
-            quantidade: Number(q.quantidade || 1),
-            valorCalculado: Number(q.valorCalculado || 0),
-            altura: Number(q.altura || 0),
-            largura: Number(q.largura || 0),
-            acrescimo_cm: Number(q.acrescimo_cm || 0),
-          }));
+          // --- CORREÇÃO CRÍTICA: MAPEAR CORRETAMENTE ---
+          const quadrosFormatados = pedido.quadros.map((q: QuadroApiResponse) => {
+            // Extrai nomes das molduras (se veio do banco em formato aninhado)
+            const moldurasSelecionadas: string[] = q.quadroMolduras
+              ? q.quadroMolduras
+                  .map((qm: QuadroMolduraAninhada) => qm.moldura?.nome || qm.moldura?.codigo)
+                  .filter((nome): nome is string => Boolean(nome))
+              : (q.moldurasSelecionadas || []);
+
+            // Extrai nomes dos materiais (se veio do banco em formato aninhado)
+            const materiaisSelecionados: string[] = q.quadroMateriais
+              ? q.quadroMateriais
+                  .map((qm: QuadroMaterialAninhada) => qm.material?.nome)
+                  .filter((nome): nome is string => Boolean(nome))
+              : (q.materiaisSelecionados || []);
+
+            return {
+              id: q.id,
+              altura: Number(q.altura || q.altura_cm || 0),
+              largura: Number(q.largura || q.largura_cm || 0),
+              moldurasSelecionadas,
+              materiaisSelecionados,
+              espessuraPaspatur: Number(q.espessuraPaspatur || q.espessura_paspatur_cm || 0),
+              medidaFornecidaCliente: Boolean(q.medidaFornecidaCliente),
+              limpezaSelecionada: Boolean(q.limpezaSelecionada),
+              valorCalculado: Number(q.valorCalculado || 0),
+              detalhesCalculo: q.detalhesCalculo || [],
+              acrescimo_cm: Number(q.acrescimo_cm || 0),
+              quantidade: Number(q.quantidade || 1),
+            };
+          });
 
           setQuadrosDoPedido(quadrosFormatados);
           
