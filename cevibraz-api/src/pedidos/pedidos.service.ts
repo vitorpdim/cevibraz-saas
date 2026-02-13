@@ -149,11 +149,9 @@ export class PedidosService {
       pedido.valor_final = valorFinalParaSalvar;
 
       // 2 -- limpa tudao (é uma segurança contra duplicação)
-      // remove os quadros antigos desse pedido isso garante que n tenha resto de quadros fantasmas ou duplicação
       await manager.delete(Quadro, { pedido: { id } });
 
-      // 3. recriacao limpinha
-      // como a lista antiga foi limpa, nois salva a lista nova completa e o banco fica exatamente igual ao que ta na tela do usuário
+      // 3 -- recriacao limpinha
       const quadrosParaPdf = await this.salvarQuadrosParaPedido(
         manager,
         pedido,
@@ -256,7 +254,7 @@ export class PedidosService {
           await this.calculoService.calcularPrecoQuadro(dtoSimulado);
 
         return {
-          id: q.id, // ✅ ADICIONAR ID DO QUADRO
+          id: q.id,
           ...dtoSimulado,
           espessuraPaspatur: dtoSimulado.espessuraPaspatur,
           valorCalculado: calculo.total,
@@ -327,7 +325,6 @@ export class PedidosService {
     pedido: Pedido,
     quadrosDto: QuadroDto[],
   ): Promise<QuadroParaPdf[]> {
-    // ✅ PROTEÇÃO 1: Garantir que as listas nunca sejam undefined
     const todosNomesMolduras = quadrosDto.flatMap(
       (q) => q.moldurasSelecionadas || [],
     );
@@ -384,7 +381,6 @@ export class PedidosService {
         espessura_paspatur_cm: number | undefined;
       }[] = [];
 
-      // ✅ PROTEÇÃO 2: Usar array vazio como fallback para molduras
       for (const nomeMoldura of quadroDto.moldurasSelecionadas || []) {
         const moldura = moldurasMap.get(nomeMoldura.toLowerCase());
         if (moldura) {
@@ -397,7 +393,6 @@ export class PedidosService {
         }
       }
 
-      // ✅ PROTEÇÃO 3: Usar array vazio como fallback para materiais
       for (const nomeMaterial of quadroDto.materiaisSelecionados || []) {
         const material = materiaisMap.get(nomeMaterial.toLowerCase());
         if (material) {

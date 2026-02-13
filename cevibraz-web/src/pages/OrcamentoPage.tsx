@@ -329,12 +329,8 @@ export function OrcamentoPage() {
     try {
       setIsLoading(true);
       const resultado = await calcularPrecoQuadro(dto);
-
       const qtd = Math.max(1, parseInt(quantidade) || 1);
       const valorTotalItem = resultado.total * qtd;
-
-      // ✅ CORREÇÃO CRÍTICA: ID único garantido
-      // Date.now() pode duplicar em cliques rápidos, então adicionamos Math.random()
       const novoId = Date.now() + Math.floor(Math.random() * 100000);
 
       const novoQuadro: QuadroNoEstado = {
@@ -354,13 +350,13 @@ export function OrcamentoPage() {
         acrescimo_cm: parseFloat(acrescimo) || 0,
       };
 
-      console.log("✅ Adicionando quadro com ID único:", novoId);
-      console.log("📊 Quadro criado:", novoQuadro);
+      console.log("✅ add quadro com ID único:", novoId);
+      console.log("📊 quadro criado:", novoQuadro);
       
       setQuadrosDoPedido((prev) => {
         const novaLista = [...prev, novoQuadro];
         console.log("📈 Nova quantidade de quadros:", novaLista.length);
-        console.log("📋 IDs agora:", novaLista.map(q => q.id));
+        console.log("📋 IDs agr:", novaLista.map(q => q.id));
         return novaLista;
       });
       
@@ -388,19 +384,19 @@ export function OrcamentoPage() {
 
     if (confirm("Remover este quadro do pedido?")) {
       setQuadrosDoPedido((prev) => {
-        console.log(`🔍 Filtrando lista com ${prev.length} itens...`);
+        console.log(`Filtrando lista com ${prev.length} itens...`);
         const novaLista = prev.filter((q) => {
           const deve_manter = q.id !== id;
           console.log(`  - ID ${q.id}: ${deve_manter ? "MANTÉM ✓" : "REMOVE ✗"}`);
           return deve_manter;
         });
 
-        console.log(`📊 Estado DEPOIS: ${novaLista.length} quadros`);
-        console.log(`📋 IDs DEPOIS:`, novaLista.map(q => q.id));
+        console.log(`📊 Estado DPS: ${novaLista.length} quadros`);
+        console.log(`📋 IDs DPS:`, novaLista.map(q => q.id));
 
-        // Alerta se tudo foi deletado acidentalmente
+        // ALERT se tudo foi deletado acidentalmente
         if (novaLista.length === 0 && prev.length > 1) {
-          console.error("🚨 CRÍTICO: Todos os quadros foram deletados! Verificar IDs duplicados.");
+          console.error("CRÍTICO: Todos os quadros foram deletados, verificar IDs duplicados");
         }
 
         return novaLista;
@@ -432,13 +428,10 @@ export function OrcamentoPage() {
 
     setIsSalvando(true);
     try {
-      // --- DEBUG CRÍTICO ---
-      console.log("🔍 Estado atual dos quadros:", JSON.stringify(quadrosDoPedido, null, 2));
+      console.log("Estado atual dos quadros:", JSON.stringify(quadrosDoPedido, null, 2));
       
-      // ✅ Mapeamento BLINDADO contra undefined/null
       const prepararQuadros = (lista: QuadroNoEstado[]) => {
         return lista.map((q, idx) => {
-          // Validação de segurança
           if (!q) {
             console.warn(`⚠️ Quadro ${idx} está null/undefined!`);
             throw new Error(`Quadro inválido na posição ${idx}`);
@@ -448,7 +441,6 @@ export function OrcamentoPage() {
             id: q.id,
             altura: Number(q.altura),
             largura: Number(q.largura),
-            // ✅ GARANTIA ABSOLUTA DE ARRAYS
             moldurasSelecionadas: Array.isArray(q.moldurasSelecionadas) 
               ? q.moldurasSelecionadas 
               : [],
@@ -463,7 +455,8 @@ export function OrcamentoPage() {
             quantidade: q.quantidade ? Number(q.quantidade) : 1,
           };
 
-          // Log detalhado para DEBUG
+      // --------------- LOG DETALHADO DE DEBUG ----------------
+
           console.log(`✓ Quadro ${idx} preparado:`, quadroPronto);
           return quadroPronto;
         });
@@ -471,7 +464,6 @@ export function OrcamentoPage() {
 
       const quadrosParaEnvio = prepararQuadros(quadrosDoPedido);
       
-      // ✅ Verificação de segurança ANTES de enviar
       if (quadrosParaEnvio.length === 0) {
         throw new Error("Nenhum quadro válido para enviar!");
       }
@@ -485,7 +477,7 @@ export function OrcamentoPage() {
         throw new Error("Erro interno: Tentativa de salvar quadro com molduras inválidas.");
       }
 
-      console.log("📤 Enviando para API:", JSON.stringify(quadrosParaEnvio, null, 2));
+      console.log("Enviando para API:", JSON.stringify(quadrosParaEnvio, null, 2));
 
       if (isEditing && pedidoId) {
         const updateDto: PedidoUpdateDto = {
@@ -497,7 +489,7 @@ export function OrcamentoPage() {
           ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
         
-        console.log("🔄 Atualizando pedido:", updateDto);
+        console.log("Atualizando pedido:", updateDto);
         await updatePedido(Number(pedidoId), updateDto);
         alert(`Pedido #${numeroPedidoDisplay} atualizado com sucesso!`);
         navigate("/backlog");
@@ -514,7 +506,7 @@ export function OrcamentoPage() {
           ocultar_valores_unitarios: ocultarValoresUnitarios,
         };
 
-        console.log("📝 Criando novo pedido:", dtoApi);
+        console.log("Criando novo pedido:", dtoApi);
         const response = await salvarPedido(dtoApi);
         
         if (response.pdf_pedido_url) {
@@ -536,11 +528,9 @@ export function OrcamentoPage() {
 
         alert(`Pedido #${response.numeroPedido} salvo com sucesso!`);
         
-        // ✅ NÃO chama handleLimparPedido aqui - deixa o usuário decidir
-        // handleLimparPedido();
       }
     } catch (err) {
-      console.error("❌ Erro completo:", err);
+      console.error("❌ erro completo:", err);
       
       if (axios.isAxiosError(err) && err.response?.data) {
         const errorData = err.response.data as Record<string, unknown>;

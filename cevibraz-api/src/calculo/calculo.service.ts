@@ -33,9 +33,9 @@ export class CalculoService {
       largura,
       moldurasSelecionadas,
       materiaisSelecionados = [],
+      quantidadeMateriais = {},
       espessuraPaspatur,
       limpezaSelecionada,
-      // novo
       acrescimo_cm = 0,
     } = dto;
 
@@ -94,7 +94,6 @@ export class CalculoService {
     const perimetroExterna_m = (alturaExterna_m + larguraExterna_m) * 2;
     const areaExterna_m2 = alturaExterna_m * larguraExterna_m;
 
-    // registre no detalhe se houve acrescimo
     if ((acrescimo_cm || 0) > 0) {
       detalhes.push(`Acréscimo aplicado: +${acrescimo_cm}cm`);
     }
@@ -104,17 +103,24 @@ export class CalculoService {
       const material = materiaisMap.get(materialNome.toLowerCase());
       if (material) {
         const materialPrice = parseFloat(material.valor_base.toString());
+        const quantidadeDoMaterial = quantidadeMateriais[materialNome] || 1;
+
         let valorMaterial = 0;
 
         if (material.tipo_calculo === 'metro_quadrado') {
-          valorMaterial = areaExterna_m2 * materialPrice;
+          valorMaterial = areaExterna_m2 * materialPrice * quantidadeDoMaterial;
         } else if (material.tipo_calculo === 'metro_linear') {
-          valorMaterial = perimetroInterno_m * materialPrice;
+          valorMaterial =
+            perimetroInterno_m * materialPrice * quantidadeDoMaterial;
         }
 
         if (valorMaterial > 0) {
           valorTotal += valorMaterial;
-          detalhes.push(`${material.nome}: R$ ${valorMaterial.toFixed(2)}`);
+          const textoQtd =
+            quantidadeDoMaterial > 1 ? ` (x${quantidadeDoMaterial})` : '';
+          detalhes.push(
+            `${material.nome}${textoQtd}: R$ ${valorMaterial.toFixed(2)}`,
+          );
         }
       }
     }
@@ -150,3 +156,5 @@ export class CalculoService {
     return { total: valorTotal, detalhes };
   }
 }
+
+console.log('');
