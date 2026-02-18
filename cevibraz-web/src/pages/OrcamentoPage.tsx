@@ -67,20 +67,13 @@ const estadoInicialFormQuadro = {
   resumoDoQuadro: "Preencha os campos para ver o resumo.",
 };
 
-/**
- * Converte um Record de materiais com quantidades em um array de strings
- * com repetições baseadas na quantidade.
- * 
- * Exemplo:
- *   { "Vidro": 2, "Fundo": 1 } => ["Vidro", "Vidro", "Fundo"]
- */
+
 function gerarListaMateriaisComQuantidade(
   materiaisDoQuadro: Record<string, number>
 ): string[] {
   const lista: string[] = [];
   for (const [materialNome, quantidade] of Object.entries(materiaisDoQuadro)) {
     if (quantidade > 0) {
-      // Adiciona o nome do material 'quantidade' vezes na lista
       for (let i = 0; i < quantidade; i++) {
         lista.push(materialNome);
       }
@@ -332,7 +325,6 @@ export function OrcamentoPage() {
       return alert("Informe a espessura do Paspatur.");
     }
 
-    // 🔧 CORREÇÃO: Usar função auxiliar para gerar lista com repetições
     const materiaisSelecionados = gerarListaMateriaisComQuantidade(
       materiaisDoQuadro
     );
