@@ -67,6 +67,21 @@ const estadoInicialFormQuadro = {
   resumoDoQuadro: "Preencha os campos para ver o resumo.",
 };
 
+
+function gerarListaMateriaisComQuantidade(
+  materiaisDoQuadro: Record<string, number>
+): string[] {
+  const lista: string[] = [];
+  for (const [materialNome, quantidade] of Object.entries(materiaisDoQuadro)) {
+    if (quantidade > 0) {
+      for (let i = 0; i < quantidade; i++) {
+        lista.push(materialNome);
+      }
+    }
+  }
+  return lista;
+}
+
 export function OrcamentoPage() {
   const [moldurasList, setMoldurasList] = useState<Moldura[]>([]);
   const [materiaisList, setMateriaisList] = useState<Material[]>([]);
@@ -187,8 +202,9 @@ export function OrcamentoPage() {
         return;
       }
 
-      const materiaisSelecionados = Object.keys(materiaisDoQuadro).filter(
-        (k) => materiaisDoQuadro[k] > 0,
+      // 🔧 CORREÇÃO: Usar função auxiliar para gerar lista com repetições
+      const materiaisSelecionados = gerarListaMateriaisComQuantidade(
+        materiaisDoQuadro
       );
 
       const dto: CalcularQuadroDto = {
@@ -309,8 +325,8 @@ export function OrcamentoPage() {
       return alert("Informe a espessura do Paspatur.");
     }
 
-    const materiaisSelecionados = Object.keys(materiaisDoQuadro).filter(
-      (k) => materiaisDoQuadro[k] > 0,
+    const materiaisSelecionados = gerarListaMateriaisComQuantidade(
+      materiaisDoQuadro
     );
 
     const dto: CalcularQuadroDto = {

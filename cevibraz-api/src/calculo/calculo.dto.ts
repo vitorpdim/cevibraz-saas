@@ -27,11 +27,6 @@ export class CalcularQuadroDto {
   @IsString({ each: true })
   materiaisSelecionados?: string[];
 
-  // ✅ NOVO: Aceitar quantidade por material
-  @IsOptional()
-  @Type(() => Object)
-  quantidadeMateriais?: Record<string, number>;
-
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

@@ -33,7 +33,6 @@ export class CalculoService {
       largura,
       moldurasSelecionadas,
       materiaisSelecionados = [],
-      quantidadeMateriais = {},
       espessuraPaspatur,
       limpezaSelecionada,
       acrescimo_cm = 0,
@@ -99,33 +98,30 @@ export class CalculoService {
     }
 
     // 3. calcular custos de materiais (usa areaExterna_m2 / perimetroInterno_m etc)
+    // 🔧 CORREÇÃO: Itera sobre a LISTA RECEBIDA (com repetições incluídas)
+    // Se "Vidro" aparecer 2 vezes no array, o cálculo será feito 2 vezes
     for (const materialNome of materiaisSelecionados) {
       const material = materiaisMap.get(materialNome.toLowerCase());
       if (material) {
         const materialPrice = parseFloat(material.valor_base.toString());
-        const quantidadeDoMaterial = quantidadeMateriais[materialNome] || 1;
-
         let valorMaterial = 0;
 
         if (material.tipo_calculo === 'metro_quadrado') {
-          valorMaterial = areaExterna_m2 * materialPrice * quantidadeDoMaterial;
+          valorMaterial = areaExterna_m2 * materialPrice;
         } else if (material.tipo_calculo === 'metro_linear') {
-          valorMaterial =
-            perimetroInterno_m * materialPrice * quantidadeDoMaterial;
+          valorMaterial = perimetroInterno_m * materialPrice;
         }
 
         if (valorMaterial > 0) {
           valorTotal += valorMaterial;
-          const textoQtd =
-            quantidadeDoMaterial > 1 ? ` (x${quantidadeDoMaterial})` : '';
-          detalhes.push(
-            `${material.nome}${textoQtd}: R$ ${valorMaterial.toFixed(2)}`,
-          );
+          detalhes.push(`${material.nome}: R$ ${valorMaterial.toFixed(2)}`);
         }
       }
     }
 
     // 4. calcular custos de molduras
+    // 🔧 CORREÇÃO: Também itera sobre a LISTA RECEBIDA (com repetições incluídas)
+    // Se uma moldura aparecer 2 vezes, o cálculo será feito 2 vezes
     if (moldurasSelecionadas && moldurasSelecionadas.length > 0) {
       for (const molduraNome of moldurasSelecionadas) {
         const moldura = moldurasMap.get(molduraNome.toLowerCase());
