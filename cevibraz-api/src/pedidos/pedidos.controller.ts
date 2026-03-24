@@ -1,4 +1,7 @@
-// Em: cevibraz-api/src/pedidos/pedidos.controller.ts
+// =======================================
+// Imports externos
+// =======================================
+
 import {
   Controller,
   Get,
@@ -14,6 +17,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
+
+// =======================================
+// Imports internos
+// =======================================
+
 import { PedidosService } from './pedidos.service';
 import {
   CreatePedidoDto,
@@ -24,6 +32,10 @@ import {
 } from './pedido.dto';
 import { PdfService } from '../pdf/pdf.service';
 
+// =======================================
+// Controller
+// =======================================
+
 @Controller('api/pedidos')
 export class PedidosController {
   private readonly logger = new Logger(PedidosController.name);
@@ -33,21 +45,13 @@ export class PedidosController {
     private readonly pdfService: PdfService,
   ) {}
 
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    return String(error);
-  }
-
   @Post()
   async create(@Body() createPedidoDto: CreatePedidoDto) {
     try {
       return await this.pedidosService.create(createPedidoDto);
     } catch (error) {
-      this.logger.error('Erro ao criar pedido:', error);
-      throw new InternalServerErrorException(this.getErrorMessage(error));
+      this.logger.error('Falha ao criar pedido.', error);
+      throw new InternalServerErrorException(this.extrairMensagemErro(error));
     }
   }
 
@@ -62,8 +66,8 @@ export class PedidosController {
         pdf_os_filename: p.pdf_os_url ? `os_${p.numero_pedido}.pdf` : null,
       }));
     } catch (error) {
-      this.logger.error('Erro ao buscar pedidos:', error);
-      throw new InternalServerErrorException(this.getErrorMessage(error));
+      this.logger.error('Falha ao listar pedidos.', error);
+      throw new InternalServerErrorException(this.extrairMensagemErro(error));
     }
   }
 
@@ -72,11 +76,9 @@ export class PedidosController {
     try {
       return await this.pedidosService.findOneForEdit(+id);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(`Erro ao buscar pedido ${id}:`, error);
-      throw new InternalServerErrorException(this.getErrorMessage(error));
+      if (error instanceof NotFoundException) throw error;
+      this.logger.error(`Falha ao buscar pedido ${id}.`, error);
+      throw new InternalServerErrorException(this.extrairMensagemErro(error));
     }
   }
 
@@ -88,11 +90,9 @@ export class PedidosController {
     try {
       return await this.pedidosService.update(+id, updatePedidoDto);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(`Erro ao atualizar pedido ${id}:`, error);
-      throw new InternalServerErrorException(this.getErrorMessage(error));
+      if (error instanceof NotFoundException) throw error;
+      this.logger.error(`Falha ao atualizar pedido ${id}.`, error);
+      throw new InternalServerErrorException(this.extrairMensagemErro(error));
     }
   }
 
@@ -104,11 +104,9 @@ export class PedidosController {
     try {
       return await this.pedidosService.updateStatus(+id, updateStatusDto);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(`Erro ao atualizar status do pedido ${id}:`, error);
-      throw new InternalServerErrorException(this.getErrorMessage(error));
+      if (error instanceof NotFoundException) throw error;
+      this.logger.error(`Falha ao atualizar status do pedido ${id}.`, error);
+      throw new InternalServerErrorException(this.extrairMensagemErro(error));
     }
   }
 
@@ -117,11 +115,9 @@ export class PedidosController {
     try {
       return await this.pedidosService.remove(+id);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(`Erro ao deletar pedido ${id}:`, error);
-      throw new InternalServerErrorException(this.getErrorMessage(error));
+      if (error instanceof NotFoundException) throw error;
+      this.logger.error(`Falha ao remover pedido ${id}.`, error);
+      throw new InternalServerErrorException(this.extrairMensagemErro(error));
     }
   }
 
@@ -132,18 +128,20 @@ export class PedidosController {
     @Res() res: Response,
   ) {
     try {
-      const pedidoFormatado = await this.pedidosService.findOneForEdit(+id);
-      const pedidoEntity = await this.pedidosService.findEntityById(+id);
+      const [pedidoFormatado, pedidoEntity] = await Promise.all([
+        this.pedidosService.findOneForEdit(+id),
+        this.pedidosService.findEntityById(+id),
+      ]);
 
       if (!pedidoEntity) {
-        throw new NotFoundException('Pedido não encontrado.');
+        throw new NotFoundException(`Pedido ${id} não encontrado.`);
       }
 
       const valorFinal = valor_editado
         ? parseFloat(valor_editado)
         : pedidoEntity.valor_final;
 
-      const quadrosParaPdf: QuadroParaPdf[] = this.mapQuadrosToParaPdf(
+      const quadrosParaPdf = this.mapQuadrosParaPdf(
         pedidoFormatado.quadros as QuadroDtoWithExtras[],
       );
 
@@ -153,21 +151,19 @@ export class PedidosController {
         valorFinal,
       );
 
-      const filename = `pedido_${pedidoEntity.numero_pedido}.pdf`;
-
       res.json({
         success: true,
         pdfData: pdfBuffer.toString('base64'),
-        filename,
+        filename: `pedido_${pedidoEntity.numero_pedido}.pdf`,
       });
     } catch (error: unknown) {
       this.logger.error(
-        `Erro ao gerar PDF do Pedido ${id}:`,
+        `Falha ao gerar PDF do pedido ${id}.`,
         // eslint-disable-next-line @typescript-eslint/no-base-to-string
         error instanceof Error ? error.stack : String(error),
       );
       res.status(500).json({
-        message: `Erro ao gerar PDF do Pedido: ${this.getErrorMessage(error)}`,
+        message: `Falha ao gerar PDF do pedido: ${this.extrairMensagemErro(error)}`,
       });
     }
   }
@@ -175,14 +171,16 @@ export class PedidosController {
   @Get(':id/os/pdf')
   async getPdfOs(@Param('id') id: string, @Res() res: Response) {
     try {
-      const pedidoFormatado = await this.pedidosService.findOneForEdit(+id);
-      const pedidoEntity = await this.pedidosService.findEntityById(+id);
+      const [pedidoFormatado, pedidoEntity] = await Promise.all([
+        this.pedidosService.findOneForEdit(+id),
+        this.pedidosService.findEntityById(+id),
+      ]);
 
       if (!pedidoEntity) {
-        throw new NotFoundException('Pedido não encontrado.');
+        throw new NotFoundException(`Pedido ${id} não encontrado.`);
       }
 
-      const quadrosParaPdf: QuadroParaPdf[] = this.mapQuadrosToParaPdf(
+      const quadrosParaPdf = this.mapQuadrosParaPdf(
         pedidoFormatado.quadros as QuadroDtoWithExtras[],
       );
 
@@ -191,26 +189,33 @@ export class PedidosController {
         quadrosParaPdf,
       );
 
-      const filename = `os_${pedidoEntity.numero_pedido}.pdf`;
-
       res.json({
         success: true,
         pdfData: pdfBuffer.toString('base64'),
-        filename,
+        filename: `os_${pedidoEntity.numero_pedido}.pdf`,
       });
     } catch (error: unknown) {
       this.logger.error(
-        `Erro ao gerar PDF da OS ${id}:`,
+        `Falha ao gerar PDF da OS ${id}.`,
         // eslint-disable-next-line @typescript-eslint/no-base-to-string
         error instanceof Error ? error.stack : String(error),
       );
       res.status(500).json({
-        message: `Erro ao gerar PDF da OS: ${this.getErrorMessage(error)}`,
+        message: `Falha ao gerar PDF da OS: ${this.extrairMensagemErro(error)}`,
       });
     }
   }
 
-  private mapQuadrosToParaPdf(quadros: QuadroDtoWithExtras[]): QuadroParaPdf[] {
+  // =======================================
+  // Métodos privados
+  // =======================================
+
+  private extrairMensagemErro(error: unknown): string {
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  private mapQuadrosParaPdf(quadros: QuadroDtoWithExtras[]): QuadroParaPdf[] {
     return quadros.map((q) => {
       const detalhes = Array.isArray(q.detalhesCalculo)
         ? q.detalhesCalculo

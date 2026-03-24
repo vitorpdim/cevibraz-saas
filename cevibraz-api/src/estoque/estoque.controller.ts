@@ -1,3 +1,7 @@
+// =======================================
+// Imports externos
+// =======================================
+
 import {
   Controller,
   Get,
@@ -9,15 +13,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+
+// =======================================
+// Imports internos
+// =======================================
+
 import { EstoqueService } from './services/estoque.service';
 import { XmlParserService } from './services/xml-parser.service';
-import {
-  EntradaManualDto,
-  AjusteEstoqueDto,
-  BaixaEstoqueDto,
-} from './dto/estoque.dto';
-import type { VincularItemXmlDto } from './dto/estoque.dto';
+import * as estoqueDto from './dto/estoque.dto';
 
+// =======================================
+// Controller
+// =======================================
 @Controller('api/estoque')
 export class EstoqueController {
   constructor(
@@ -26,44 +33,46 @@ export class EstoqueController {
   ) {}
 
   @Get('dashboard')
-  async getDashboard() {
+  getDashboard() {
     return this.estoqueService.getDashboard();
   }
 
   @Get('itens')
-  async getItens() {
+  getItens() {
     return this.estoqueService.getItensEstoque();
   }
 
   @Get('movimentacoes')
-  async getMovimentacoes(@Query('limite') limite?: string) {
+  getMovimentacoes(@Query('limite') limite?: string) {
     const limit = limite ? parseInt(limite, 10) : 100;
     return this.estoqueService.getMovimentacoes(limit);
   }
 
   @Get('movimentacoes/item')
-  async getMovimentacoesPorItem(
+  getMovimentacoesPorItem(
     @Query('tipo') tipo: 'moldura' | 'material',
     @Query('id') id: string,
   ) {
     if (!tipo || !id) {
-      throw new BadRequestException('Parâmetros tipo e id são obrigatórios');
+      throw new BadRequestException(
+        'Os parâmetros "tipo" e "id" são obrigatórios.',
+      );
     }
     return this.estoqueService.getMovimentacoesPorItem(tipo, parseInt(id, 10));
   }
 
   @Post('entrada')
-  async registrarEntrada(@Body() dto: EntradaManualDto) {
+  registrarEntrada(@Body() dto: estoqueDto.EntradaManualDto) {
     return this.estoqueService.registrarEntradaManual(dto);
   }
 
   @Post('baixa')
-  async registrarBaixa(@Body() dto: BaixaEstoqueDto) {
+  registrarBaixa(@Body() dto: estoqueDto.BaixaEstoqueDto) {
     return this.estoqueService.registrarBaixa(dto);
   }
 
   @Post('ajuste')
-  async ajustarEstoque(@Body() dto: AjusteEstoqueDto) {
+  ajustarEstoque(@Body() dto: estoqueDto.AjusteEstoqueDto) {
     return this.estoqueService.ajustarEstoque(dto);
   }
 
@@ -71,15 +80,14 @@ export class EstoqueController {
   @UseInterceptors(FileInterceptor('file'))
   parseXml(@UploadedFile() file: Express.Multer.File | undefined) {
     if (!file) {
-      throw new BadRequestException('Arquivo XML não enviado');
+      throw new BadRequestException('Arquivo XML não enviado.');
     }
-
     const xmlContent = file.buffer.toString('utf-8');
     return this.xmlParserService.parseNFeXml(xmlContent);
   }
 
   @Post('xml/vincular')
-  async vincularItemXml(@Body() dto: VincularItemXmlDto) {
+  vincularItemXml(@Body() dto: estoqueDto.VincularItemXmlDto) {
     return this.estoqueService.vincularItemXml(dto);
   }
 }

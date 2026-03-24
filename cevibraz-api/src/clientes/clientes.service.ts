@@ -1,39 +1,51 @@
+// =======================================
+// Imports Externos
+// =======================================
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
+// =======================================
+// Imports Internos
+// =======================================
 import { Cliente } from './cliente.entity';
 
+// =======================================
+// Service
+// =======================================
 @Injectable()
 export class ClientesService {
   constructor(
     @InjectRepository(Cliente)
-    private clientesRepository: Repository<Cliente>,
+    private readonly clientesRepository: Repository<Cliente>,
   ) {}
 
   async findOrCreate(nome: string, telefone: string): Promise<Cliente> {
     const nomeNormalizado = nome.trim();
-
     const telefoneNormalizado = telefone?.trim() || undefined;
 
-    let cliente = await this.clientesRepository.findOneBy({
+    const clienteExistente = await this.clientesRepository.findOneBy({
       nome: nomeNormalizado,
     });
 
-    if (cliente) {
-      if (
+    if (clienteExistente) {
+      const deveAtualizarTelefone =
         telefoneNormalizado !== undefined &&
-        cliente.telefone !== telefoneNormalizado
-      ) {
-        cliente.telefone = telefoneNormalizado;
-        return this.clientesRepository.save(cliente);
+        clienteExistente.telefone !== telefoneNormalizado;
+
+      if (deveAtualizarTelefone) {
+        clienteExistente.telefone = telefoneNormalizado;
+        return this.clientesRepository.save(clienteExistente);
       }
-    } else {
-      cliente = this.clientesRepository.create({
-        nome: nomeNormalizado,
-        telefone: telefoneNormalizado,
-      });
-      return this.clientesRepository.save(cliente);
+
+      return clienteExistente;
     }
-    return cliente;
+
+    const novoCliente = this.clientesRepository.create({
+      nome: nomeNormalizado,
+      telefone: telefoneNormalizado,
+    });
+
+    return this.clientesRepository.save(novoCliente);
   }
 }

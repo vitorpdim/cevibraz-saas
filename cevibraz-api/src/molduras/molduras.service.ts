@@ -1,24 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+// =======================================
+// Imports externos
+// =======================================
+
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { Moldura } from './moldura.entity';
-import { CreateMolduraDto, UpdateMolduraDto } from './moldura.dto';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 
+// =======================================
+// Imports internos
+// =======================================
+
+import { Moldura } from './moldura.entity';
+import { CreateMolduraDto, UpdateMolduraDto } from './moldura.dto';
+
+// =======================================
+// Service
+// =======================================
+
 @Injectable()
 export class MoldurasService {
+  private readonly logger = new Logger(MoldurasService.name);
+  private readonly storagePath = process.env.STORAGE_PATH || './storage';
+
   constructor(
     @InjectRepository(Moldura)
-    private moldurasRepository: Repository<Moldura>,
+    private readonly moldurasRepository: Repository<Moldura>,
   ) {}
 
   findAll(): Promise<Moldura[]> {
-    return this.moldurasRepository.find({
-      order: {
-        nome: 'ASC',
-      },
-    });
+    return this.moldurasRepository.find({ order: { nome: 'ASC' } });
   }
 
   async create(
@@ -41,21 +53,11 @@ export class MoldurasService {
     const moldura = await this.moldurasRepository.findOne({ where: { id } });
 
     if (!moldura) {
-      throw new NotFoundException(`Moldura com ID ${id} não encontrada`);
+      throw new NotFoundException(`Moldura com ID ${id} não encontrada.`);
     }
 
     if (file) {
-      if (moldura.imagem_url) {
-        const oldPath = join(
-          process.env.STORAGE_PATH || './storage',
-          moldura.imagem_url.replace('/static/', ''),
-        );
-        try {
-          await unlink(oldPath);
-        } catch (error) {
-          console.error('Erro ao deletar imagem antiga:', error);
-        }
-      }
+      await this.removerImagemDisco(moldura.imagem_url);
       moldura.imagem_url = `/static/molduras/${file.filename}`;
     }
 
@@ -67,51 +69,46 @@ export class MoldurasService {
     const moldura = await this.moldurasRepository.findOne({ where: { id } });
 
     if (!moldura) {
-      throw new NotFoundException(`Moldura com ID ${id} não encontrada`);
+      throw new NotFoundException(`Moldura com ID ${id} não encontrada.`);
     }
 
-    if (moldura.imagem_url) {
-      const filePath = join(
-        process.env.STORAGE_PATH || './storage',
-        moldura.imagem_url.replace('/static/', ''),
-      );
-      try {
-        await unlink(filePath);
-      } catch (error) {
-        console.error('Erro ao deletar imagem:', error);
-      }
-    }
-
+    await this.removerImagemDisco(moldura.imagem_url);
     await this.moldurasRepository.remove(moldura);
-    return { message: 'Moldura deletada com sucesso' };
+
+    return { message: 'Moldura removida com sucesso.' };
   }
 
-  // remover várias molduras por id (apaga arquivos tb)
   async removeMany(ids: number[]): Promise<{ message: string }> {
     if (!ids || ids.length === 0) {
-      return { message: 'Nenhum id fornecido' };
+      return { message: 'Nenhum ID fornecido.' };
     }
 
     const molduras = await this.moldurasRepository.findBy({ id: In(ids) });
 
-    for (const moldura of molduras) {
-      if (moldura.imagem_url) {
-        const filePath = join(
-          process.env.STORAGE_PATH || './storage',
-          moldura.imagem_url.replace('/static/', ''),
-        );
-        try {
-          await unlink(filePath);
-        } catch (error) {
-          console.error(
-            `erro ao deletar imagem da moldura ${moldura.id}:`,
-            error,
-          );
-        }
-      }
-    }
+    await Promise.allSettled(
+      molduras.map((m) => this.removerImagemDisco(m.imagem_url)),
+    );
 
     await this.moldurasRepository.remove(molduras);
-    return { message: `${molduras.length} moldura(s) deletada(s) com sucesso` };
+
+    return {
+      message: `${molduras.length} moldura(s) removida(s) com sucesso.`,
+    };
+  }
+
+  // =======================================
+  // Métodos privados
+  // =======================================
+
+  private async removerImagemDisco(imagemUrl: string | null): Promise<void> {
+    if (!imagemUrl) return;
+
+    const filePath = join(this.storagePath, imagemUrl.replace('/static/', ''));
+
+    try {
+      await unlink(filePath);
+    } catch {
+      this.logger.warn(`Imagem não encontrada para remoção: ${filePath}`);
+    }
   }
 }

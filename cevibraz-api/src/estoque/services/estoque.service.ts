@@ -1,3 +1,7 @@
+// =======================================
+// imports externos
+// =======================================
+
 import {
   Injectable,
   NotFoundException,
@@ -6,6 +10,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager, MoreThan } from 'typeorm';
+
+// =======================================
+// Imports internos
+// =======================================
+
 import { MovimentacaoEstoque } from '../entities/movimentacao-estoque.entity';
 import { Moldura } from '../../molduras/moldura.entity';
 import { Material } from '../../materiais/material.entity';
@@ -19,6 +28,22 @@ import {
   MovimentacaoDto,
 } from '../dto/estoque.dto';
 
+// =======================================
+// Tipos
+// =======================================
+
+type TipoItem = 'moldura' | 'material';
+type StatusEstoque = 'ok' | 'baixo' | 'critico';
+
+interface MovimentacaoBase {
+  saldoAnterior: number;
+  saldoNovo: number;
+}
+
+// =======================================
+// Service
+// =======================================
+
 @Injectable()
 export class EstoqueService {
   private readonly logger = new Logger(EstoqueService.name);
@@ -26,14 +51,18 @@ export class EstoqueService {
   constructor(
     private readonly entityManager: EntityManager,
     @InjectRepository(MovimentacaoEstoque)
-    private movimentacoesRepository: Repository<MovimentacaoEstoque>,
+    private readonly movimentacoesRepository: Repository<MovimentacaoEstoque>,
     @InjectRepository(Moldura)
-    private moldurasRepository: Repository<Moldura>,
+    private readonly moldurasRepository: Repository<Moldura>,
     @InjectRepository(Material)
-    private materiaisRepository: Repository<Material>,
+    private readonly materiaisRepository: Repository<Material>,
   ) {}
 
-  async registrarEntradaManual(dto: EntradaManualDto) {
+  // =======================================
+  // Métodos Públicos — Mutação de Estoque
+  // =======================================
+
+  async registrarEntradaManual(dto: EntradaManualDto): Promise<unknown> {
     return this.entityManager.transaction(async (manager) => {
       const {
         tipo_item,
@@ -45,23 +74,25 @@ export class EstoqueService {
       } = dto;
 
       const item = await this.buscarItem(manager, tipo_item, item_id);
-      const saldoAnterior = Number(item.estoque_atual || 0);
-      const saldoNovo = saldoAnterior + quantidade;
+      const { saldoAnterior, saldoNovo } = this.calcularSaldos(
+        item,
+        quantidade,
+        'entrada',
+      );
 
       const movimentacao = manager.create(MovimentacaoEstoque, {
         tipo: 'ENTRADA',
         origem: referencia_externa ? 'XML' : 'MANUAL',
-        quantidade: quantidade,
+        quantidade,
         saldo_anterior: saldoAnterior,
         saldo_novo: saldoNovo,
         descricao: descricao || `Entrada manual de ${tipo_item}`,
-        referencia_externa: referencia_externa,
-        usuario: usuario,
+        referencia_externa,
+        usuario,
         [tipo_item]: item,
       });
 
       await manager.save(movimentacao);
-
       item.estoque_atual = saldoNovo;
       await manager.save(item);
 
@@ -70,14 +101,14 @@ export class EstoqueService {
       );
 
       return {
-        message: 'Entrada registrada com sucesso',
+        message: 'Entrada registrada com sucesso.',
         movimentacao_id: movimentacao.id,
         saldo_novo: saldoNovo,
       };
     });
   }
 
-  async registrarBaixa(dto: BaixaEstoqueDto) {
+  async registrarBaixa(dto: BaixaEstoqueDto): Promise<unknown> {
     return this.entityManager.transaction(async (manager) => {
       const { tipo_item, item_id, quantidade, pedido_id, descricao } = dto;
 
@@ -86,7 +117,7 @@ export class EstoqueService {
 
       if (saldoAnterior < quantidade) {
         throw new BadRequestException(
-          `Estoque insuficiente. Disponível: ${saldoAnterior}, Solicitado: ${quantidade}`,
+          `Estoque insuficiente. Disponível: ${saldoAnterior}, solicitado: ${quantidade}.`,
         );
       }
 
@@ -95,7 +126,7 @@ export class EstoqueService {
       const movimentacao = manager.create(MovimentacaoEstoque, {
         tipo: 'SAIDA',
         origem: pedido_id ? 'PEDIDO' : 'MANUAL',
-        quantidade: quantidade,
+        quantidade,
         saldo_anterior: saldoAnterior,
         saldo_novo: saldoNovo,
         descricao:
@@ -103,12 +134,11 @@ export class EstoqueService {
           (pedido_id
             ? `Baixa automática - Pedido #${pedido_id}`
             : 'Baixa manual'),
-        pedido_id: pedido_id,
+        pedido_id,
         [tipo_item]: item,
       });
 
       await manager.save(movimentacao);
-
       item.estoque_atual = saldoNovo;
       await manager.save(item);
 
@@ -117,14 +147,14 @@ export class EstoqueService {
       );
 
       return {
-        message: 'Baixa registrada com sucesso',
+        message: 'Baixa registrada com sucesso.',
         movimentacao_id: movimentacao.id,
         saldo_novo: saldoNovo,
       };
     });
   }
 
-  async ajustarEstoque(dto: AjusteEstoqueDto) {
+  async ajustarEstoque(dto: AjusteEstoqueDto): Promise<unknown> {
     return this.entityManager.transaction(async (manager) => {
       const { tipo_item, item_id, novo_saldo, motivo, usuario } = dto;
 
@@ -139,32 +169,29 @@ export class EstoqueService {
         saldo_anterior: saldoAnterior,
         saldo_novo: novo_saldo,
         descricao: `Ajuste de inventário: ${motivo}`,
-        usuario: usuario,
+        usuario,
         [tipo_item]: item,
       });
 
       await manager.save(movimentacao);
-
       item.estoque_atual = novo_saldo;
       await manager.save(item);
 
       this.logger.log(
-        `Ajuste registrado: ${tipo_item} #${item_id}, ${
-          diferenca > 0 ? '+' : ''
-        }${diferenca} (${saldoAnterior} → ${novo_saldo})`,
+        `Ajuste registrado: ${tipo_item} #${item_id}, ${diferenca >= 0 ? '+' : ''}${diferenca} (${saldoAnterior} → ${novo_saldo})`,
       );
 
       return {
-        message: 'Ajuste registrado com sucesso',
+        message: 'Ajuste registrado com sucesso.',
         movimentacao_id: movimentacao.id,
         saldo_anterior: saldoAnterior,
         saldo_novo: novo_saldo,
-        diferenca: diferenca,
+        diferenca,
       };
     });
   }
 
-  async vincularItemXml(dto: VincularItemXmlDto) {
+  async vincularItemXml(dto: VincularItemXmlDto): Promise<unknown> {
     const { item_xml, tipo_item, item_id, numero_nfe } = dto;
 
     const entradaDto: EntradaManualDto = {
@@ -177,6 +204,10 @@ export class EstoqueService {
 
     return this.registrarEntradaManual(entradaDto);
   }
+
+  // =======================================
+  // Métodos Públicos — Consulta
+  // =======================================
 
   async getDashboard(): Promise<DashboardEstoqueDto> {
     const [molduras, materiais] = await Promise.all([
@@ -237,7 +268,7 @@ export class EstoqueService {
         unidade_medida: 'm',
         valor_unitario: valor,
         valor_total: parseFloat((estoque * valor).toFixed(2)),
-        status: estoque === 0 ? 'critico' : estoque <= minimo ? 'baixo' : 'ok',
+        status: this.resolverStatusEstoque(estoque, minimo),
         imagem_url: m.imagem_url,
       };
     });
@@ -256,44 +287,27 @@ export class EstoqueService {
         unidade_medida: m.unidade || 'un',
         valor_unitario: valor,
         valor_total: parseFloat((estoque * valor).toFixed(2)),
-        status: estoque === 0 ? 'critico' : estoque <= minimo ? 'baixo' : 'ok',
+        status: this.resolverStatusEstoque(estoque, minimo),
       };
     });
 
-    return [...itensMolduras, ...itensMateriais].sort((a, b) => {
-      if (a.status === 'critico' && b.status !== 'critico') return -1;
-      if (a.status !== 'critico' && b.status === 'critico') return 1;
-      if (a.status === 'baixo' && b.status === 'ok') return -1;
-      if (a.status === 'ok' && b.status === 'baixo') return 1;
-      return 0;
-    });
+    return [...itensMolduras, ...itensMateriais].sort(
+      this.ordenarPorCriticidade,
+    );
   }
 
-  async getMovimentacoes(limite: number = 100): Promise<MovimentacaoDto[]> {
+  async getMovimentacoes(limite = 100): Promise<MovimentacaoDto[]> {
     const movimentacoes = await this.movimentacoesRepository.find({
       relations: ['moldura', 'material'],
       order: { data: 'DESC' },
       take: limite,
     });
 
-    return movimentacoes.map((m) => ({
-      id: m.id,
-      tipo: m.tipo,
-      origem: m.origem,
-      quantidade: Number(m.quantidade),
-      saldo_anterior: Number(m.saldo_anterior),
-      saldo_novo: Number(m.saldo_novo),
-      descricao: m.descricao || '',
-      data: m.data,
-      item_nome: m.moldura?.nome || m.material?.nome || 'Item removido',
-      item_tipo: m.moldura ? 'moldura' : 'material',
-      usuario: m.usuario,
-      pedido_id: m.pedido_id,
-    }));
+    return movimentacoes.map(this.mapearMovimentacao);
   }
 
   async getMovimentacoesPorItem(
-    tipo: 'moldura' | 'material',
+    tipo: TipoItem,
     itemId: number,
   ): Promise<MovimentacaoDto[]> {
     const where =
@@ -308,35 +322,82 @@ export class EstoqueService {
       take: 50,
     });
 
-    return movimentacoes.map((m) => ({
-      id: m.id,
-      tipo: m.tipo,
-      origem: m.origem,
-      quantidade: Number(m.quantidade),
-      saldo_anterior: Number(m.saldo_anterior),
-      saldo_novo: Number(m.saldo_novo),
-      descricao: m.descricao || '',
-      data: m.data,
-      item_nome: m.moldura?.nome || m.material?.nome || 'Item removido',
-      item_tipo: m.moldura ? 'moldura' : 'material',
-      usuario: m.usuario || undefined,
-      pedido_id: m.pedido_id || undefined,
-    }));
+    return movimentacoes.map(this.mapearMovimentacao);
   }
+
+  // =======================================
+  // Métodos privados
+  // =======================================
+
+  private calcularSaldos(
+    item: Moldura | Material,
+    quantidade: number,
+    operacao: 'entrada',
+  ): MovimentacaoBase {
+    const saldoAnterior = Number(item.estoque_atual || 0);
+    const saldoNovo =
+      operacao === 'entrada'
+        ? saldoAnterior + quantidade
+        : saldoAnterior - quantidade;
+    return { saldoAnterior, saldoNovo };
+  }
+
+  private resolverStatusEstoque(
+    estoque: number,
+    minimo: number,
+  ): StatusEstoque {
+    if (estoque === 0) return 'critico';
+    if (estoque <= minimo) return 'baixo';
+    return 'ok';
+  }
+
+  private readonly ordenarPorCriticidade = (
+    a: ItemEstoqueDto,
+    b: ItemEstoqueDto,
+  ): number => {
+    const prioridade: Record<StatusEstoque, number> = {
+      critico: 0,
+      baixo: 1,
+      ok: 2,
+    };
+    return prioridade[a.status] - prioridade[b.status];
+  };
+
+  private readonly mapearMovimentacao = (
+    m: MovimentacaoEstoque,
+  ): MovimentacaoDto => ({
+    id: m.id,
+    tipo: m.tipo,
+    origem: m.origem,
+    quantidade: Number(m.quantidade),
+    saldo_anterior: Number(m.saldo_anterior),
+    saldo_novo: Number(m.saldo_novo),
+    descricao: m.descricao || '',
+    data: m.data,
+    item_nome: m.moldura?.nome || m.material?.nome || 'Item removido',
+    item_tipo: m.moldura ? 'moldura' : 'material',
+    usuario: m.usuario || undefined,
+    pedido_id: m.pedido_id || undefined,
+  });
 
   private async buscarItem(
     manager: EntityManager,
-    tipo: 'moldura' | 'material',
+    tipo: TipoItem,
     id: number,
   ): Promise<Moldura | Material> {
-    const repository =
-      tipo === 'moldura' ? this.moldurasRepository : this.materiaisRepository;
-    const item = (await manager.findOne(repository.target as any, {
-      where: { id },
-    })) as Moldura | Material | null;
+    const target =
+      tipo === 'moldura'
+        ? this.moldurasRepository.target
+        : this.materiaisRepository.target;
+    const item = (await manager.findOne(
+      target as Parameters<typeof manager.findOne>[0],
+      {
+        where: { id },
+      },
+    )) as Moldura | Material | null;
 
     if (!item) {
-      throw new NotFoundException(`${tipo} com ID ${id} não encontrado`);
+      throw new NotFoundException(`${tipo} com ID ${id} não encontrado.`);
     }
 
     return item;

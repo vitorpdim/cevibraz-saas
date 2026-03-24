@@ -5,17 +5,22 @@ import {
   IsBoolean,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
 
-// vai ter um class-validator' dps pra validação automática
+// =======================================
+// DTOs de cálculo
+// =======================================
 
 export class CalcularQuadroDto {
   @Type(() => Number)
   @IsNumber()
+  @Min(1)
   altura: number;
 
   @Type(() => Number)
   @IsNumber()
+  @Min(1)
   largura: number;
 
   @IsArray()
@@ -30,6 +35,7 @@ export class CalcularQuadroDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   espessuraPaspatur?: number;
 
   @Type(() => Boolean)
@@ -43,5 +49,6 @@ export class CalcularQuadroDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   acrescimo_cm?: number;
 }
