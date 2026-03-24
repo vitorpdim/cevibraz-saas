@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from "react";
+// =======================================
+// Imports externos
+// =======================================
+
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
   Edit2,
@@ -8,6 +12,11 @@ import {
   CheckSquare,
   Square,
 } from "lucide-react";
+
+// =======================================
+// Imports internos
+// =======================================
+
 import type { Moldura } from "../types";
 import {
   fetchMolduras,
@@ -18,15 +27,22 @@ import {
 } from "../services/api";
 import { MolduraFormModal } from "../components/MolduraFormModal";
 
+// =======================================
+// Constantes
+// =======================================
+
 const API_URL =
   import.meta.env.VITE_API_URL || "https://cevibraz-api.onrender.com";
+
+// =======================================
+// Componente
+// =======================================
 
 export const MoldurasPage: React.FC = () => {
   const [molduras, setMolduras] = useState<Moldura[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [selectedMoldura, setSelectedMoldura] = useState<Moldura | null>(null);
@@ -39,8 +55,7 @@ export const MoldurasPage: React.FC = () => {
       const data = await fetchMolduras();
       setMolduras(data);
       setSelectedIds([]);
-    } catch (err) {
-      console.error("Erro:", err);
+    } catch {
       setError("Falha ao carregar molduras.");
     } finally {
       setIsLoading(false);
@@ -50,6 +65,15 @@ export const MoldurasPage: React.FC = () => {
   useEffect(() => {
     carregarMolduras();
   }, []);
+
+  const moldurasFiltradas = useMemo(() => {
+    const termo = searchTerm.toLowerCase();
+    return molduras.filter(
+      (m) =>
+        m.nome.toLowerCase().includes(termo) ||
+        m.codigo.toLowerCase().includes(termo),
+    );
+  }, [molduras, searchTerm]);
 
   const handleCreateClick = () => {
     setSelectedMoldura(null);
@@ -72,76 +96,66 @@ export const MoldurasPage: React.FC = () => {
       }
       await carregarMolduras();
     } catch (error) {
-      alert("Erro ao salvar. Verifique o console.");
+      alert("Erro ao salvar, verifique o console!");
       throw error;
     }
   };
 
-  // --- LÓGICA DE SELEÇÃO MÚLTIPLA ---
   const toggleSelection = (id: number) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
   const handleSelectAll = () => {
-    const moldurasFiltradas = getFiltered();
-    if (selectedIds.length === moldurasFiltradas.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(moldurasFiltradas.map((m) => m.id));
-    }
+    setSelectedIds(
+      selectedIds.length === moldurasFiltradas.length
+        ? []
+        : moldurasFiltradas.map((m) => m.id),
+    );
   };
 
   const handleBatchDelete = async () => {
-    if (
-      !confirm(
-        `Tem certeza que deseja deletar ${selectedIds.length} moldura(s)?`
-      )
-    )
+    if (!confirm(`Remover permanentemente ${selectedIds.length} moldura(s)?`))
       return;
     try {
       await deleteMoldurasBatch(selectedIds);
       await carregarMolduras();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      alert("Erro ao deletar molduras.");
+    } catch {
+      alert("Falha ao remover molduras.");
     }
   };
 
   const handleDelete = async (moldura: Moldura) => {
-    if (!confirm(`Deletar a moldura "${moldura.nome}"?`)) return;
+    if (!confirm(`Remover permanentemente a moldura "${moldura.nome}"?`))
+      return;
     try {
       await deleteMoldura(moldura.id);
       await carregarMolduras();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      alert("Erro ao deletar.");
+    } catch {
+      alert("Falha ao remover moldura.");
     }
   };
 
-  const getFiltered = () => {
-    const t = searchTerm.toLowerCase();
-    return molduras.filter(
-      (m) =>
-        m.nome.toLowerCase().includes(t) || m.codigo.toLowerCase().includes(t)
-    );
-  };
-
-  if (isLoading)
+  if (isLoading) {
     return (
       <div className="page-content">
         <div className="container">Carregando...</div>
       </div>
     );
-  if (error)
+  }
+
+  if (error) {
     return (
       <div className="page-content">
         <div className="container text-danger">{error}</div>
       </div>
     );
+  }
 
-  const moldurasFiltradas = getFiltered();
+  const todasSelecionadas =
+    selectedIds.length === moldurasFiltradas.length &&
+    moldurasFiltradas.length > 0;
 
   return (
     <div className="page-content">
@@ -156,11 +170,10 @@ export const MoldurasPage: React.FC = () => {
           }}
         >
           <h1>Gerenciamento de Molduras</h1>
-
           <div style={{ display: "flex", gap: "1rem" }}>
             {selectedIds.length > 0 && (
               <button className="btn btn-danger" onClick={handleBatchDelete}>
-                <Trash2 size={20} /> Deletar ({selectedIds.length})
+                <Trash2 size={20} /> Remover ({selectedIds.length})
               </button>
             )}
             <button className="btn btn-success" onClick={handleCreateClick}>
@@ -169,7 +182,6 @@ export const MoldurasPage: React.FC = () => {
           </div>
         </div>
 
-        {/* busca e select all */}
         <div
           className="search-section"
           style={{
@@ -194,7 +206,7 @@ export const MoldurasPage: React.FC = () => {
             <input
               type="text"
               className="search-input"
-              placeholder="Buscar molduras por nome ou código..."
+              placeholder="Buscar por nome ou código..."
               aria-label="Buscar molduras"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -204,14 +216,9 @@ export const MoldurasPage: React.FC = () => {
           <button
             className="btn btn-secondary"
             onClick={handleSelectAll}
-            title={
-              selectedIds.length === moldurasFiltradas.length
-                ? "Desmarcar Todos"
-                : "Marcar Todos"
-            }
+            title={todasSelecionadas ? "Desmarcar todos" : "Selecionar todos"}
           >
-            {selectedIds.length > 0 &&
-            selectedIds.length === moldurasFiltradas.length ? (
+            {todasSelecionadas ? (
               <CheckSquare size={20} />
             ) : (
               <Square size={20} />
@@ -233,9 +240,7 @@ export const MoldurasPage: React.FC = () => {
               return (
                 <div
                   key={moldura.id}
-                  className={`moldura-card ${
-                    isSelected ? "selected-card" : ""
-                  }`}
+                  className={`moldura-card ${isSelected ? "selected-card" : ""}`}
                   style={{
                     border: isSelected
                       ? "2px solid var(--color-primary)"
@@ -246,16 +251,14 @@ export const MoldurasPage: React.FC = () => {
                     className="moldura-image"
                     style={{ position: "relative" }}
                   >
-                    {/* checkbox REAL MEMO*/}
-                    <label className={`select-checkbox ${isSelected ? '' : ''}`} aria-hidden>
+                    <label className="select-checkbox">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelection(moldura.id)}
-                        aria-label={`Selecionar moldura ${moldura.nome}`}
+                        aria-label={`Selecionar ${moldura.nome}`}
                       />
                     </label>
-
                     {moldura.imagem_url ? (
                       <img
                         src={`${API_URL}${moldura.imagem_url}`}
@@ -274,7 +277,7 @@ export const MoldurasPage: React.FC = () => {
                     <p className="moldura-preco">
                       R${" "}
                       {parseFloat(
-                        moldura.valor_metro_linear.toString()
+                        moldura.valor_metro_linear.toString(),
                       ).toFixed(2)}
                       /m
                     </p>

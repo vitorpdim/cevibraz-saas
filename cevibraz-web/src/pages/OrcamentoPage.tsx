@@ -202,7 +202,7 @@ export function OrcamentoPage() {
         return;
       }
 
-      // 🔧 CORREÇÃO: Usar função auxiliar para gerar lista com repetições
+      // CORREÇÃO: usar função auxiliar para gerar lista com repetições
       const materiaisSelecionados = gerarListaMateriaisComQuantidade(
         materiaisDoQuadro
       );
